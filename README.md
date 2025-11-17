@@ -7,7 +7,6 @@ This repository serves as my workspace and portfolio as I continue learning and 
 More projects will be added as I grow and explore new ideas.
 
 ## Live Demos
-(These links will work once GitHub Pages is enabled)
 
 - **Pseudo‑3D Flying Game:**  
   https://jakoblite.github.io/CodeMap/html/Skoleprosjekt/flying.html
