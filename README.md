@@ -1,9 +1,9 @@
-```
+<pre>
 ┌──────────────────────────────────────────────────────────┐
 │   ████  CodeMap Repository                               │
 │   Small browser games, canvas experiments & school work  │
 └──────────────────────────────────────────────────────────┘
-```
+</pre>
 
 Hi, I’m Jakob
 
