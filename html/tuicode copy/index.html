@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mitt 2D-spill</title>
+  <style>
+    body {
+      margin: 0;
+      background-color: #222;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    canvas {
+      border: 2px solid #fff;
+      background-color: #000;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="gameCanvas" width="1400" height="800"></canvas>
+
+  <script>
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+
+    // Load images
+    const playerImg = new Image();
+    playerImg.src = "player.png";
+    const enemyImg = new Image();
+    enemyImg.src = "enemy.png";
+
+    // Game state variables
+    let spillTilstand = "meny";
+    let score = 0;
+
+    const spiller = {
+      x: 700,
+      y: 500,
+      width: 70,
+      height: 70,
+      speed: 4.5,
+    };
+
+    const fiende = {
+      x: 100,
+      y: 100,
+      width: 70,
+      height: 70,
+      speed: 3.5,
+    };
+
+    const maal = {
+      x: Math.random() * (canvas.width - 40),
+      y: Math.random() * (canvas.height - 40),
+      width: 70,
+      height: 70,
+      color: "gold",
+    };
+
+    const keys = {};
+
+    window.addEventListener("keydown", (e) => {
+      keys[e.key] = true;
+    });
+
+    window.addEventListener("keyup", (e) => {
+      keys[e.key] = false;
+    });
+
+    canvas.addEventListener("click", () => {
+      if (spillTilstand === "meny") {
+        spillTilstand = "spill";
+      }
+    });
+
+    function checkCollisionAABB(rect1, rect2) {
+      return (
+        rect1.x < rect2.x + rect2.width &&
+        rect1.x + rect1.width > rect2.x &&
+        rect1.y < rect2.y + rect2.height &&
+        rect1.y + rect1.height > rect2.y
+      );
+    }
+
+    function update() {
+      if (keys["ArrowRight"]) spiller.x += spiller.speed;
+      if (keys["ArrowLeft"]) spiller.x -= spiller.speed;
+      if (keys["ArrowDown"]) spiller.y += spiller.speed;
+      if (keys["ArrowUp"]) spiller.y -= spiller.speed;
+    // Move enemy smoothly toward player
+    const dx = spiller.x - fiende.x;
+    const dy = spiller.y - fiende.y;
+    const distance = Math.hypot(dx, dy);
+
+    if (distance > 1) {
+     fiende.x += (dx / distance) * fiende.speed;
+      fiende.y += (dy / distance) * fiende.speed;
+    }
+      if (checkCollisionAABB(fiende, spiller)) {
+        fiende.x = 100;
+        fiende.y = 100;
+        spiller.x = 700;
+        spiller.y = 500;
+        score--;
+      }
+
+      if (checkCollisionAABB(maal, spiller)) {
+        fiende.x = 100;
+        fiende.y = 100;
+        spiller.x = 700;
+        spiller.y = 500;
+        maal.x = Math.random() * (canvas.width - 40);
+        maal.y = Math.random() * (canvas.height - 40);
+        score++;
+;
+      }
+    }
+
+
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Player
+  ctx.drawImage(playerImg, spiller.x, spiller.y, spiller.width, spiller.height);
+
+  // Enemy — rotates to face the player
+  const dx = spiller.x + spiller.width / 2 - (fiende.x + fiende.width / 2);
+  const dy = spiller.y + spiller.height / 2 - (fiende.y + fiende.height / 2);
+  const angle = Math.atan2(dy, dx);
+
+  ctx.save();
+  ctx.translate(fiende.x + fiende.width / 2, fiende.y + fiende.height / 2);
+  ctx.rotate(angle);
+  ctx.drawImage(
+    enemyImg,
+    -fiende.width / 2,
+    -fiende.height / 2,
+    fiende.width,
+    fiende.height
+  );
+  ctx.restore();
+
+  // Goal
+  ctx.fillStyle = maal.color;
+  ctx.fillRect(maal.x, maal.y, maal.width, maal.height);
+
+  // Score
+  ctx.save();
+  ctx.fillStyle = "white";
+  ctx.font = "20px Arial";
+  ctx.textAlign = "left";
+  ctx.textBaseline = "top";
+  ctx.fillText("Score: " + score, 10, 10);
+  ctx.restore();
+}
+    function StartMeny() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      ctx.fillStyle = "white";
+      ctx.font = "50px Arial";
+      ctx.textAlign = "center";
+      ctx.fillText("Jakten", canvas.width / 2, canvas.height / 2 + 45);
+
+      ctx.textAlign = "left";
+      ctx.textBaseline = "top";
+      ctx.font = "20px Arial";
+      ctx.fillText("Score: " + score, 10, 10);
+
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.font = "20px Arial";
+      ctx.fillText("Trykk for å starte", canvas.width / 2, canvas.height / 2);
+    }
+
+    function gameLoop() {
+      if (spillTilstand === "meny") {
+        StartMeny();
+      } else if (spillTilstand === "spill") {
+        update();
+        draw();
+      }
+
+      requestAnimationFrame(gameLoop);
+    }
+
+    // Start after images load
+    let imagesLoaded = 0;
+    function startIfReady() {
+      imagesLoaded++;
+      if (imagesLoaded === 2) gameLoop();
+    }
+
+    playerImg.onload = startIfReady;
+    enemyImg.onload = startIfReady;
+  </script>
+</body>
+</html>

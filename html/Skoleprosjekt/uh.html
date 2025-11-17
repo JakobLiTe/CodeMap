@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Mini Starfox</title>
+    <style>
+        body {
+            margin: 0;
+            background: black; 
+            overflow: hidden;
+        }
+        canvas {
+            display: block;      
+        }
+    </style>
+</head>
+<body>
+<canvas id="game"></canvas>
+
+<script>
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+let obstacles = [];
+let spawnTimer = 0;
+let playerX = 0;
+let playerY = -0.2;
+let tilt = 0;
+let lives = 3;
+let isDead = false;
+let deathTimer = 0;
+
+
+
+function resize() {
+    canvas.width  = window.innerWidth;
+    canvas.height = window.innerHeight;
+    
+}
+resize();
+window.addEventListener("resize", resize);
+let keys = {};
+window.addEventListener("keydown", e => keys[e.key] = true);
+window.addEventListener("keyup", e => keys[e.key] = false);
+
+function spawnObstacle() {
+    let xVal;
+    do {
+        xVal = (Math.random() - 0.5) * 3;
+    } while (Math.abs(xVal) < 0.6);
+
+    obstacles.push({
+        x: xVal,
+        z: 8,
+        size: 0.2 + Math.random() * 0.1,
+        height: 0.9 + Math.random() * 0.8
+    });
+}
+
+function update() {
+  if (isDead) {
+    deathTimer -= 0.03;
+    if (deathTimer <= 0) {
+        isDead = false;
+        playerX = 0;
+        playerY = -0.2;
+        tilt = 0;
+    } else {
+        return;
+    }
+}
+  let speed = 0.04;
+
+if (keys["ArrowLeft"])  { playerX -= speed; tilt = -0.3; }
+if (keys["ArrowRight"]) { playerX += speed; tilt = 0.3;  }
+if (keys["ArrowUp"])    { playerY -= speed; }
+if (keys["ArrowDown"])  { playerY += speed; }
+
+if (!keys["ArrowLeft"] && !keys["ArrowRight"]) {
+    tilt *= 0.8;
+}
+    obstacles.forEach(o => {
+        o.z -= 0.03;
+        o.z -= 0.01;
+    });
+
+    obstacles = obstacles.filter(o => o.z > 0.5);
+
+    obstacles.forEach(o => {
+    if (o.z < 1.4 && o.z > 0.8) {
+        if (Math.abs(o.x - playerX) < o.size + 0.2) {
+            lives--;
+            isDead = true;
+            deathTimer = 2;
+        }
+    }
+});
+
+    spawnTimer -= 0.03; // reduce timer each frame
+
+    if (spawnTimer <= 0) {
+        spawnObstacle();
+        spawnTimer = 0.6 + Math.random() * 1.2; 
+        // occasional gaps, never huge empty stretches
+    }
+}
+
+function drawGroundGrid() {
+    ctx.strokeStyle = "cyan";
+
+    for (let x = -4; x <= 4; x += 0.4) {
+        drawLine3D(x, 0.5, 1, x, 0.5, 12);
+    }
+
+    for (let z = 1; z <= 12; z += 0.5) {
+        drawLine3D(-4, 0.5, z, 4, 0.5, z);
+    }
+}
+
+function drawObstacle(o) {
+    let w = o.size;   
+    let h = o.height; 
+    let z = o.z;
+
+    drawLine3D(o.x - w, 0.5, z, o.x + w, 0.5, z);
+
+    drawLine3D(o.x - w, 0.5 - h, z, o.x + w, 0.5 - h, z);
+
+    drawLine3D(o.x - w, 0.5, z, o.x - w, 0.5 - h, z);
+    drawLine3D(o.x + w, 0.5, z, o.x + w, 0.5 - h, z);
+}
+
+function drawShip() {
+    let z = 1;
+
+    let px = playerX;
+    let py = playerY;
+
+    let angle = tilt;
+
+    function rot(x, y) {
+        return {
+            x: px + (x * Math.cos(angle) - y * Math.sin(angle)),
+            y: py + (x * Math.sin(angle) + y * Math.cos(angle))
+        };
+    }
+
+    let nose = rot(0, -0.25);
+    let leftWing = rot(-0.35, 0.15);
+    let rightWing = rot(0.35, 0.15);
+    let bodyLeft = rot(-0.1, 0);
+    let bodyRight = rot(0.1, 0);
+
+    let A = project(bodyLeft.x, bodyLeft.y, z);
+    let B = project(nose.x, nose.y, z);
+    let C = project(bodyRight.x, bodyRight.y, z);
+
+    ctx.fillStyle = "black";
+    ctx.beginPath();
+    ctx.moveTo(A.x, A.y);
+    ctx.lineTo(B.x, B.y);
+    ctx.lineTo(C.x, C.y);
+    ctx.closePath();
+    ctx.fill();
+
+    drawLine3D(bodyLeft.x, bodyLeft.y, z, nose.x, nose.y, z);
+    drawLine3D(bodyRight.x, bodyRight.y, z, nose.x, nose.y, z);
+    drawLine3D(bodyLeft.x, bodyLeft.y, z, bodyRight.x, bodyRight.y, z);
+
+    drawLine3D(bodyLeft.x, bodyLeft.y, z, leftWing.x, leftWing.y, z);
+    drawLine3D(bodyRight.x, bodyRight.y, z, rightWing.x, rightWing.y, z);
+}
+
+function render() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = "cyan";
+    ctx.font = "24px monospace";
+    ctx.fillText("Lives: " + lives, 20, 40);
+    ctx.strokeStyle = "cyan";
+    ctx.lineWidth = 2;
+    drawGroundGrid();
+    drawShip();
+
+    obstacles.forEach(drawObstacle);
+}
+function project(x, y, z) {
+    let f = 300;                
+    let scale = f / z;        
+
+    return {
+        x: canvas.width / 2 + x * scale,
+        y: canvas.height / 2 + y * scale
+    };
+}
+function drawLine3D(x1, y1, z1, x2, y2, z2) {
+   let a = project(x1, y1, z1);
+    let b = project(x2, y2, z2);
+
+    ctx.beginPath();
+    ctx.moveTo(a.x, a.y);
+    ctx.lineTo(b.x, b.y);
+    ctx.stroke();
+}
+
+function loop() {
+    update();
+    render();
+    requestAnimationFrame(loop); 
+}
+loop();
+</script>
+</body>
+</html>

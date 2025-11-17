@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="no">
+
+  <head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mitt 2D-spill</title>
+  <style>
+    body {
+        margin: 0;
+        background-color: #222;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+}
+
+
+canvas {
+        border: 2px solid #fff;
+        background-color: #000;
+}
+  </style>
+</head>
+<body>
+  <canvas id="gameCanvas" width="800" height="600"></canvas>
+ 
+  <script>
+    //La stå, dette gir deg tilgang til å kunne tegne på skjermen
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+
+// God plass å legge inn variabler
+let spillTilstand = "meny";
+let score = 0;
+const spiller = {
+    x : 700,
+    y : 500,
+    width : 40,
+    height : 40,
+    color : "blue",
+    speed : 3
+}
+
+const fiende = {
+    x : 100,
+    y : 100,
+    width : 40,
+    height : 40,
+    color : "red",
+    speed : 2
+}
+
+const maal = {
+    x : Math.random()*(canvas.width-40),
+    y : Math.random()*(canvas.height-40),
+    width : 40,
+    height : 40,
+    color : "gold"
+}
+
+var keys = {};
+
+  window.addEventListener('keydown', (e) => {
+    keys[e.key] = true;
+  });
+
+  window.addEventListener('keyup', (e) => {
+    keys[e.key] = false;
+  });
+    canvas.addEventListener("click",()=>{
+    if(spillTilstand === "meny"){
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      spillTilstand = "spill"
+    }
+    });
+function checkCollisionAABB(rect1, rect2) {
+return ( rect1.x < rect2.x + rect2.width && // rect1 sin venstre kant er til venstre for rect2 sin høyre kant
+rect1.x + rect1.width > rect2.x && // rect1 sin høyre kant er til høyre for rect2 sin venstre kant
+rect1.y < rect2.y + rect2.height && //rect1 sin topp er over rect2 sin bunn
+rect1.y + rect1.height > rect2.y //rect1 sin bunn er under rect2 sin topp
+);
+}
+
+
+// Logikk som skjer hvert "frame"
+    function update() {
+        if (keys['ArrowRight']) {spiller.x += spiller.speed;}
+        if (keys['ArrowLeft']) {spiller.x -= spiller.speed;}
+        if (keys['ArrowDown']) {spiller.y += spiller.speed;}
+        if (keys['ArrowUp']) {spiller.y -= spiller.speed;}
+
+        if(fiende.x<spiller.x){fiende.x = fiende.x + fiende.speed;}
+        if(fiende.x>spiller.x){fiende.x = fiende.x - fiende.speed;}
+        if(fiende.y<spiller.y){fiende.y = fiende.y + fiende.speed;}
+        if(fiende.y>spiller.y){fiende.y = fiende.y - fiende.speed;}
+
+        if(checkCollisionAABB(fiende,spiller)) {
+            fiende.x = 100;
+            fiende.y = 100;
+            spiller.x = 700;
+            spiller.y = 500;
+            score--;
+        }
+        if(checkCollisionAABB(maal,spiller)) {
+          fiende.x = 100;
+          fiende.y = 100;
+          spiller.x = 700;
+          spiller.y = 500;
+          maal.x = Math.random()*(canvas.width-40);
+          maal.y = Math.random()*(canvas.height-40);
+          score++;
+      }
+}
+//Her skal du legge inn grafikk
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height); // LA STÅ; Renser skjermen
+       
+        //spiller kropp
+        ctx.fillStyle = spiller.color;       // Velg farge på firkanten
+        ctx.fillRect(spiller.x, spiller.y, spiller.width, spiller.height); // (x, y, bredde, høyde)
+        //spiller øyne
+        ctx.beginPath();
+        ctx.arc(spiller.x+10, spiller.y+10, 5, 0, Math.PI * 2); // (x, y, radius, startAngle, endAngle)
+        ctx.fillStyle = 'black';
+        ctx.fill();
+        ctx.closePath();
+        ctx.beginPath();
+        ctx.arc(spiller.x+30, spiller.y+10, 5, 0, Math.PI * 2); // (x, y, radius, startAngle, endAngle)
+        ctx.fillStyle = 'black';
+        ctx.fill();
+        ctx.closePath();
+        //spiller munn
+        ctx.beginPath();
+        ctx.moveTo(spiller.x+10, spiller.y+30);
+        ctx.lineTo(spiller.x+30, spiller.y+30);
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+        ctx.closePath();
+
+        //fiende
+        ctx.fillStyle = fiende.color;       // Velg farge på firkanten
+        ctx.fillRect(fiende.x, fiende.y, fiende.width, fiende.height); // (x, y, bredde, høyde)
+        //fiende øyne
+        ctx.beginPath();
+        ctx.arc(fiende.x+10, fiende.y+10, 5, 0, Math.PI * 2); // (x, y, radius, startAngle, endAngle)
+        ctx.fillStyle = 'black';
+        ctx.fill();
+        ctx.closePath();
+        ctx.beginPath();
+        ctx.arc(fiende.x+30, fiende.y+10, 5, 0, Math.PI * 2); // (x, y, radius, startAngle, endAngle)
+        ctx.fillStyle = 'black';
+        ctx.fill();
+        ctx.closePath();
+        //spiller munn
+        ctx.beginPath();
+        ctx.moveTo(fiende.x+10, fiende.y+30);
+        ctx.lineTo(fiende.x+30, fiende.y+30);
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+        ctx.closePath();
+
+        //maal
+        ctx.fillStyle = maal.color;       // Velg farge på firkanten
+        ctx.fillRect(maal.x, maal.y, maal.width, maal.height); // (x, y, bredde, høyde)
+       
+      ctx.save();
+      ctx.fillStyle = "white";
+      ctx.font = "20px Arial";
+      ctx.textAlign = "left";
+      ctx.textBaseline = "top";
+      ctx.fillText("Score: " + score, 10, 10);
+      ctx.restore();
+}
+
+
+
+function StartMeny() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Title
+  ctx.fillStyle = "white";
+  ctx.font = "50px Arial";
+  ctx.textAlign = "center";
+  ctx.fillText("Jakten", canvas.width / 2, canvas.height / 2 + 45);
+
+  // Score (only once, same placement as in draw)
+  ctx.textAlign = "left";
+  ctx.textBaseline = "top";
+  ctx.font = "20px Arial";
+  ctx.fillText("Score: " + score, 10, 10);
+
+  // Instructions
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.font = "20px Arial";
+  ctx.fillText("Trykk for å starte", canvas.width / 2, canvas.height / 2);
+}
+
+
+//For at spillet skal oppdatere og tegne seg selv kontinuerlig, trenger mest sannsynlig ikke å forandres på
+    function gameLoop() {
+      if(spillTilstand === "meny"){
+        StartMeny();
+      } else if(spillTilstand === "spill"){
+
+      
+        update();  // Spill-logikk
+        draw();    // Tegn på skjermen
+        }
+        requestAnimationFrame(gameLoop); // Kjør på nytt
+      
+}
+//starter spillet
+gameLoop();
+  </script>
+</body>
+</html>

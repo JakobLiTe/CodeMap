@@ -1,0 +1,13 @@
+uh så alex vil ha prosjekt
+
+
+Jeg vil lage semi3d flight simulator
+
+En stylisert wireframe (slope.io style) flight sim i selvlaget raycasting engine med randomly placed obstacles
+Inspo(aka pinterest søkeord):
+Starfox
+Msfs1990-99 eller noe
+Flappy bird randomly generated piper/bygninger
+Barrel rolls
+
+
