@@ -13,7 +13,7 @@ More projects will be added as I grow and explore new ideas.
   https://jakoblite.github.io/CodeMap/html/Skoleprosjekt/flying.html
 
 - **JAKTEN (“The Hunt”):**  
-  https://jakoblite.github.io/CodeMap/html/Jakten (POLISHED)/index.html
+  https://jakoblite.github.io/CodeMap/html/Jakten%20(POLISHED)/index.html
 
 - **Other Experiments:**  
   Will add soon :)
