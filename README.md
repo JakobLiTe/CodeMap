@@ -6,6 +6,18 @@ My focus right now is experimenting with HTML, CSS, and JavaScript by creating s
 This repository serves as my workspace and portfolio as I continue learning and developing better code over time.
 More projects will be added as I grow and explore new ideas.
 
+## Live Demos
+(These links will work once GitHub Pages is enabled)
+
+- **Pseudo‑3D Flying Game:**  
+  https://jakoblite.github.io/CodeMap/html/Skoleprosjekt/uh.html
+
+- **JAKTEN (“The Hunt”):**  
+  https://jakoblite.github.io/CodeMap/html/tuicode/index.html
+
+- **Other Experiments:**  
+  https://jakoblite.github.io/CodeMap/html/
+
 ## Projects
 
 ### Pseudo-3D Flying Game (HTML + JS)
