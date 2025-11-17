@@ -28,6 +28,8 @@ let tilt = 0;
 let lives = 3;
 let isDead = false;
 let deathTimer = 0;
+let score = 0;
+let gameOver = false;
 
 
 
@@ -43,20 +45,28 @@ window.addEventListener("keydown", e => keys[e.key] = true);
 window.addEventListener("keyup", e => keys[e.key] = false);
 
 function spawnObstacle() {
+    let zone = Math.random();
+
     let xVal;
-    do {
-        xVal = (Math.random() - 0.5) * 3;
-    } while (Math.abs(xVal) < 0.6);
+    if (zone < 0.5) {
+        // center-ish spawn
+        xVal = (Math.random() - 0.5) * 1.6;
+    } else {
+        // side spawns
+        xVal = (Math.random() < 0.5 ? -1.5 : 1.5) + (Math.random() * 0.4 - 0.2);
+    }
 
     obstacles.push({
         x: xVal,
-        z: 8,
-        size: 0.2 + Math.random() * 0.1,
-        height: 0.9 + Math.random() * 0.8
+        z: 8 + Math.random() * 1,
+        size: 0.2 + Math.random() * 0.15,
+        height: 0.7 + Math.random() * 1.0,
+        drift: (Math.random() - 0.5) * 0.01
     });
 }
 
 function update() {
+  if (gameOver) return;
   if (isDead) {
     deathTimer -= 0.03;
     if (deathTimer <= 0) {
@@ -68,6 +78,7 @@ function update() {
         return;
     }
 }
+score += 1;
   let speed = 0.04;
 
 if (keys["ArrowLeft"])  { playerX -= speed; tilt = -0.3; }
@@ -78,19 +89,29 @@ if (keys["ArrowDown"])  { playerY += speed; }
 if (!keys["ArrowLeft"] && !keys["ArrowRight"]) {
     tilt *= 0.8;
 }
+
+if (playerX < -1.6) playerX = -1.6;
+if (playerX >  1.6) playerX = 1.6;
+if (playerY < -0.5) playerY = -0.5;
+if (playerY >  0.4) playerY = 0.4;
+
     obstacles.forEach(o => {
-        o.z -= 0.03;
-        o.z -= 0.01;
+        o.z -= 0.04;
+        o.x += o.drift;
     });
 
-    obstacles = obstacles.filter(o => o.z > 0.5);
+    obstacles = obstacles.filter(o => o.z > 0.3);
 
     obstacles.forEach(o => {
     if (o.z < 1.4 && o.z > 0.8) {
-        if (Math.abs(o.x - playerX) < o.size + 0.2) {
+        if (Math.abs(o.x - playerX) < o.size + 0.12 && playerY > 0.5 - o.height - 0.05) {
             lives--;
             isDead = true;
-            deathTimer = 2;
+            deathTimer = 0.8;
+
+            if (lives <= 0) {
+                gameOver = true;
+            }
         }
     }
 });
@@ -131,10 +152,8 @@ function drawObstacle(o) {
 
 function drawShip() {
     let z = 1;
-
     let px = playerX;
     let py = playerY;
-
     let angle = tilt;
 
     function rot(x, y) {
@@ -144,30 +163,64 @@ function drawShip() {
         };
     }
 
-    let nose = rot(0, -0.25);
-    let leftWing = rot(-0.35, 0.15);
-    let rightWing = rot(0.35, 0.15);
-    let bodyLeft = rot(-0.1, 0);
-    let bodyRight = rot(0.1, 0);
+    // Starfox‑inspired wireframe hull
+    let nose      = rot(0,   -0.28);
+    let cockpit   = rot(0,   -0.14);
+    let bodyL     = rot(-0.10, 0.00);
+    let bodyR     = rot( 0.10, 0.00);
+    let tailL     = rot(-0.08, 0.20);
+    let tailR     = rot( 0.08, 0.20);
+    let wingL     = rot(-0.55, 0.06);
+    let wingR     = rot( 0.55, 0.06);
 
-    let A = project(bodyLeft.x, bodyLeft.y, z);
-    let B = project(nose.x, nose.y, z);
-    let C = project(bodyRight.x, bodyRight.y, z);
+    let P = {};
+    function Pp(n,p){ P[n]=project(p.x,p.y,z); }
+    Pp("nose",nose);
+    Pp("cockpit",cockpit);
+    Pp("bodyL",bodyL);
+    Pp("bodyR",bodyR);
+    Pp("tailL",tailL);
+    Pp("tailR",tailR);
+    Pp("wingL",wingL);
+    Pp("wingR",wingR);
 
-    ctx.fillStyle = "black";
+    // Fill center fuselage
+    ctx.fillStyle="black";
     ctx.beginPath();
-    ctx.moveTo(A.x, A.y);
-    ctx.lineTo(B.x, B.y);
-    ctx.lineTo(C.x, C.y);
+    ctx.moveTo(P.nose.x, P.nose.y);
+    ctx.lineTo(P.bodyL.x, P.bodyL.y);
+    ctx.lineTo(P.tailL.x, P.tailL.y);
+    ctx.lineTo(P.tailR.x, P.tailR.y);
+    ctx.lineTo(P.bodyR.x, P.bodyR.y);
     ctx.closePath();
     ctx.fill();
 
-    drawLine3D(bodyLeft.x, bodyLeft.y, z, nose.x, nose.y, z);
-    drawLine3D(bodyRight.x, bodyRight.y, z, nose.x, nose.y, z);
-    drawLine3D(bodyLeft.x, bodyLeft.y, z, bodyRight.x, bodyRight.y, z);
+    // Wings fill
+    ctx.beginPath();
+    ctx.moveTo(P.bodyL.x, P.bodyL.y);
+    ctx.lineTo(P.wingL.x, P.wingL.y);
+    ctx.lineTo(P.tailL.x, P.tailL.y);
+    ctx.closePath();
+    ctx.fill();
 
-    drawLine3D(bodyLeft.x, bodyLeft.y, z, leftWing.x, leftWing.y, z);
-    drawLine3D(bodyRight.x, bodyRight.y, z, rightWing.x, rightWing.y, z);
+    ctx.beginPath();
+    ctx.moveTo(P.bodyR.x, P.bodyR.y);
+    ctx.lineTo(P.wingR.x, P.wingR.y);
+    ctx.lineTo(P.tailR.x, P.tailR.y);
+    ctx.closePath();
+    ctx.fill();
+
+    // Outline helper
+    function L(a,b){ drawLine3D(a.x,a.y,z,b.x,b.y,z); }
+
+    L(nose, cockpit);
+    L(cockpit, bodyL);
+    L(cockpit, bodyR);
+    L(bodyL, tailL);
+    L(bodyR, tailR);
+    L(tailL, tailR);
+    L(bodyL, wingL);
+    L(bodyR, wingR);
 }
 
 function render() {
@@ -175,12 +228,28 @@ function render() {
     ctx.fillStyle = "cyan";
     ctx.font = "24px monospace";
     ctx.fillText("Lives: " + lives, 20, 40);
+    ctx.fillText("Score: " + score, 20, 70);
     ctx.strokeStyle = "cyan";
     ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(canvas.width, 0);
+    ctx.lineTo(canvas.width, canvas.height);
+    ctx.lineTo(0, canvas.height);
+    ctx.closePath();
+    ctx.stroke();
     drawGroundGrid();
     drawShip();
 
     obstacles.forEach(drawObstacle);
+
+    if (gameOver) {
+        ctx.fillStyle = "cyan";
+        ctx.font = "80px monospace";
+        ctx.textAlign = "center";
+        ctx.fillText("GAME OVER", canvas.width/2, canvas.height/2);
+        return;
+    }
 }
 function project(x, y, z) {
     let f = 300;                
