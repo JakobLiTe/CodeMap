@@ -16,7 +16,7 @@ More projects will be added as I grow and explore new ideas.
   https://jakoblite.github.io/CodeMap/html/Jakten (POLISHED)/index.html
 
 - **Other Experiments:**  
-  https://jakoblite.github.io/CodeMap/html/
+  Will add soon :)
 
 ## Projects
 
