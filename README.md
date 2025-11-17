@@ -17,4 +17,10 @@ A collection of small assignments, tests, and interactive pages created as schoo
 ### JAKTEN (directly translated to English to "The Hunt")
 A small coordinate-based game featuring keyboard movement, basic enemy AI, scoring, and a simple objective system. 
 
+## Skills
+- HTML, CSS, JavaScript
+- Canvas rendering
+- Basic game logic and AI
+- Git and GitHub
+
 Thats all for me right now
