@@ -15,4 +15,6 @@ A pseudo‑3D flying game built using canvas projection math. Includes movement,
 A collection of small assignments, tests, and interactive pages created as school projects.
 
 ### JAKTEN (directly translated to English to "The Hunt")
-A small coordinate-based game featuring keyboard movement, basic enemy AI, scoring, and a simple objective system.
+A small coordinate-based game featuring keyboard movement, basic enemy AI, scoring, and a simple objective system. 
+
+Thats all for me right now
