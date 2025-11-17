@@ -17,21 +17,41 @@
 <body>
 <canvas id="game"></canvas>
 
+<audio id="bgm"      src="bgm.wav" loop></audio>
+<audio id="startSfx" src="game_start.wav"></audio>
+<audio id="deathSfx" src="death.wav"></audio>
+<audio id="hitSfx"   src="hit.ogg"></audio>
 <script>
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 let obstacles = [];
-let spawnTimer = 0;
+let spwnT = 0;
 let playerX = 0;
 let playerY = -0.2;
 let tilt = 0;
 let lives = 3;
 let isDead = false;
-let deathTimer = 0;
+let dT = 0;
 let score = 0;
+
+const bgm      = document.getElementById("bgm");
+const startSfx = document.getElementById("startSfx");
+const deathSfx = document.getElementById("deathSfx");
+const hitSfx   = document.getElementById("hitSfx");
+
+bgm.volume = 0.8;
+
 let gameOver = false;
 
+let firstPlay = false;
 
+window.addEventListener("keydown", () => {
+    if (!firstPlay) {
+        firstPlay = true;
+        bgm.play().catch(()=>{});
+        startSfx.play().catch(()=>{});
+    }
+});
 
 function resize() {
     canvas.width  = window.innerWidth;
@@ -44,15 +64,22 @@ let keys = {};
 window.addEventListener("keydown", e => keys[e.key] = true);
 window.addEventListener("keyup", e => keys[e.key] = false);
 
+window.addEventListener("keydown", e => {
+    if (e.key === "m" || e.key === "M") {
+        bgm.muted = !bgm.muted;
+        startSfx.muted = bgm.muted;
+        deathSfx.muted = bgm.muted;
+        hitSfx.muted = bgm.muted;
+    }
+});
+
 function spawnObstacle() {
     let zone = Math.random();
 
     let xVal;
     if (zone < 0.5) {
-        // center-ish spawn
         xVal = (Math.random() - 0.5) * 1.6;
     } else {
-        // side spawns
         xVal = (Math.random() < 0.5 ? -1.5 : 1.5) + (Math.random() * 0.4 - 0.2);
     }
 
@@ -65,11 +92,16 @@ function spawnObstacle() {
     });
 }
 
+if (bgm.paused) {
+    bgm.play().catch(()=>{});
+    startSfx.play().catch(()=>{});
+}
+
 function update() {
   if (gameOver) return;
   if (isDead) {
-    deathTimer -= 0.03;
-    if (deathTimer <= 0) {
+    dT -= 0.03;
+    if (dT <= 0) {
         isDead = false;
         playerX = 0;
         playerY = -0.2;
@@ -105,35 +137,37 @@ if (playerY >  0.4) playerY = 0.4;
     obstacles.forEach(o => {
     if (o.z < 1.4 && o.z > 0.8) {
         if (Math.abs(o.x - playerX) < o.size + 0.12 && playerY > 0.5 - o.height - 0.05) {
+           hitSfx.play().catch(()=>{});
+
             lives--;
             isDead = true;
-            deathTimer = 0.8;
+            dT = 0.8;
 
             if (lives <= 0) {
-                gameOver = true;
+               deathSfx.play().catch(()=>{});
+               gameOver = true;
             }
         }
     }
 });
 
-    spawnTimer -= 0.03; // reduce timer each frame
+    spwnT -= 0.03;
 
-    if (spawnTimer <= 0) {
+    if (spwnT <= 0) {
         spawnObstacle();
-        spawnTimer = 0.6 + Math.random() * 1.2; 
-        // occasional gaps, never huge empty stretches
+        spwnT = 0.6 + Math.random() * 1.2;
     }
 }
 
 function drawGroundGrid() {
     ctx.strokeStyle = "cyan";
 
-    for (let x = -4; x <= 4; x += 0.4) {
-        drawLine3D(x, 0.5, 1, x, 0.5, 12);
+    for (let x = -8; x <= 8; x += 0.4) {
+        line3D(x, 0.5, 1, x, 0.5, 14);
     }
 
-    for (let z = 1; z <= 12; z += 0.5) {
-        drawLine3D(-4, 0.5, z, 4, 0.5, z);
+    for (let z = 1; z <= 14; z += 0.5) {
+        line3D(-8, 0.5, z, 8, 0.5, z);
     }
 }
 
@@ -141,13 +175,10 @@ function drawObstacle(o) {
     let w = o.size;   
     let h = o.height; 
     let z = o.z;
-
-    drawLine3D(o.x - w, 0.5, z, o.x + w, 0.5, z);
-
-    drawLine3D(o.x - w, 0.5 - h, z, o.x + w, 0.5 - h, z);
-
-    drawLine3D(o.x - w, 0.5, z, o.x - w, 0.5 - h, z);
-    drawLine3D(o.x + w, 0.5, z, o.x + w, 0.5 - h, z);
+    line3D(o.x - w, 0.5, z, o.x + w, 0.5, z);
+    line3D(o.x - w, 0.5 - h, z, o.x + w, 0.5 - h, z);
+    line3D(o.x - w, 0.5, z, o.x - w, 0.5 - h, z);
+    line3D(o.x + w, 0.5, z, o.x + w, 0.5 - h, z);
 }
 
 function drawShip() {
@@ -155,15 +186,12 @@ function drawShip() {
     let px = playerX;
     let py = playerY;
     let angle = tilt;
-
     function rot(x, y) {
         return {
             x: px + (x * Math.cos(angle) - y * Math.sin(angle)),
             y: py + (x * Math.sin(angle) + y * Math.cos(angle))
         };
     }
-
-    // Starfox‑inspired wireframe hull
     let nose      = rot(0,   -0.28);
     let cockpit   = rot(0,   -0.14);
     let bodyL     = rot(-0.10, 0.00);
@@ -172,9 +200,8 @@ function drawShip() {
     let tailR     = rot( 0.08, 0.20);
     let wingL     = rot(-0.55, 0.06);
     let wingR     = rot( 0.55, 0.06);
-
     let P = {};
-    function Pp(n,p){ P[n]=project(p.x,p.y,z); }
+    function Pp(n,p){ P[n]=proj(p.x,p.y,z); }
     Pp("nose",nose);
     Pp("cockpit",cockpit);
     Pp("bodyL",bodyL);
@@ -183,8 +210,6 @@ function drawShip() {
     Pp("tailR",tailR);
     Pp("wingL",wingL);
     Pp("wingR",wingR);
-
-    // Fill center fuselage
     ctx.fillStyle="black";
     ctx.beginPath();
     ctx.moveTo(P.nose.x, P.nose.y);
@@ -194,25 +219,19 @@ function drawShip() {
     ctx.lineTo(P.bodyR.x, P.bodyR.y);
     ctx.closePath();
     ctx.fill();
-
-    // Wings fill
     ctx.beginPath();
     ctx.moveTo(P.bodyL.x, P.bodyL.y);
     ctx.lineTo(P.wingL.x, P.wingL.y);
     ctx.lineTo(P.tailL.x, P.tailL.y);
     ctx.closePath();
     ctx.fill();
-
     ctx.beginPath();
     ctx.moveTo(P.bodyR.x, P.bodyR.y);
     ctx.lineTo(P.wingR.x, P.wingR.y);
     ctx.lineTo(P.tailR.x, P.tailR.y);
     ctx.closePath();
     ctx.fill();
-
-    // Outline helper
-    function L(a,b){ drawLine3D(a.x,a.y,z,b.x,b.y,z); }
-
+    function L(a,b){ line3D(a.x,a.y,z,b.x,b.y,z); }
     L(nose, cockpit);
     L(cockpit, bodyL);
     L(cockpit, bodyR);
@@ -223,47 +242,51 @@ function drawShip() {
     L(bodyR, wingR);
 }
 
+function drawMountains() {
+    ctx.strokeStyle = "cyan";
+    ctx.lineWidth = 3;
+    const horizonY = -0.8;
+    const mx = [-10, -6, -3, 0, 2, 5, 9];
+    const my = [-0.4, -1.2, -0.5, -2.0, -0.7, -1.5, -0.3];
+    ctx.beginPath();
+    for (let i = 0; i < mx.length; i++) {
+        const p = proj(mx[i], horizonY + my[i], 3.2);
+        if (i === 0) ctx.moveTo(p.x, p.y);
+        else ctx.lineTo(p.x, p.y);
+    }
+    ctx.stroke();
+}
+
 function render() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.textAlign = "left";
     ctx.fillStyle = "cyan";
     ctx.font = "24px monospace";
     ctx.fillText("Lives: " + lives, 20, 40);
     ctx.fillText("Score: " + score, 20, 70);
-    ctx.strokeStyle = "cyan";
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(0, 0);
-    ctx.lineTo(canvas.width, 0);
-    ctx.lineTo(canvas.width, canvas.height);
-    ctx.lineTo(0, canvas.height);
-    ctx.closePath();
-    ctx.stroke();
     drawGroundGrid();
+    drawMountains();
     drawShip();
-
     obstacles.forEach(drawObstacle);
-
     if (gameOver) {
         ctx.fillStyle = "cyan";
-        ctx.font = "80px monospace";
+        ctx.font = "60px monospace";
         ctx.textAlign = "center";
         ctx.fillText("GAME OVER", canvas.width/2, canvas.height/2);
         return;
     }
 }
-function project(x, y, z) {
+function proj(x, y, z) {
     let f = 300;                
     let scale = f / z;        
-
     return {
         x: canvas.width / 2 + x * scale,
-        y: canvas.height / 2 + y * scale
+        y: canvas.height / 1.3 + y * scale
     };
 }
-function drawLine3D(x1, y1, z1, x2, y2, z2) {
-   let a = project(x1, y1, z1);
-    let b = project(x2, y2, z2);
-
+function line3D(x1, y1, z1, x2, y2, z2) {
+   let a = proj(x1, y1, z1);
+    let b = proj(x2, y2, z2);
     ctx.beginPath();
     ctx.moveTo(a.x, a.y);
     ctx.lineTo(b.x, b.y);
