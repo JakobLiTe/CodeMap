@@ -1,9 +1,25 @@
-<pre>
-┌──────────────────────────────────────────────────────────┐
-│   ████  CodeMap Repository                               │
-│   Small browser games, canvas experiments & school work  │
-└──────────────────────────────────────────────────────────┘
-</pre>
+<p align="center">
+  <img src="data:image/svg+xml;utf8,
+  <svg xmlns='http://www.w3.org/2000/svg' width='900' height='180'>
+    <rect width='100%%' height='100%%' fill='black'/>
+    <g font-family='monospace' font-size='24' fill='none' stroke='#5fffe6' stroke-width='2'>
+      <!-- Border -->
+      <path d='M20 40 H880 V140 H20 Z' />
+    </g>
+
+    <!-- Glowing text -->
+    <text x='50' y='80' fill='#5fffe6' font-family='monospace' font-size='26' 
+          style='paint-order:stroke; stroke:#5fffe6; stroke-width:0.5;'>
+      ████  CodeMap Repository
+    </text>
+
+    <text x='50' y='120' fill='#5fffe6' font-family='monospace' font-size='22'
+          style='paint-order:stroke; stroke:#5fffe6; stroke-width:0.4;'>
+      Small browser games, canvas experiments & school work
+    </text>
+  </svg>
+  " />
+</p>
 
 Hi, I’m Jakob
 
