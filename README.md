@@ -10,10 +10,10 @@ More projects will be added as I grow and explore new ideas.
 (These links will work once GitHub Pages is enabled)
 
 - **Pseudo‑3D Flying Game:**  
-  https://jakoblite.github.io/CodeMap/html/Skoleprosjekt/uh.html
+  https://jakoblite.github.io/CodeMap/html/Skoleprosjekt/flying.html
 
 - **JAKTEN (“The Hunt”):**  
-  https://jakoblite.github.io/CodeMap/html/tuicode/index.html
+  https://jakoblite.github.io/CodeMap/html/Jakten (POLISHED)/index.html
 
 - **Other Experiments:**  
   https://jakoblite.github.io/CodeMap/html/
