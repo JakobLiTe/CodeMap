@@ -1,3 +1,8 @@
+┌──────────────────────────────────────────────────────────┐
+│   ████  CodeMap Repository                               │
+│   Small browser games, canvas experiments & school work  │
+└──────────────────────────────────────────────────────────┘
+
 Hi, I’m Jakob
 
 I’m a student learning front-end development and building projects to improve my skills.
@@ -6,7 +11,9 @@ My focus right now is experimenting with HTML, CSS, and JavaScript by creating s
 This repository serves as my workspace and portfolio as I continue learning and developing better code over time.
 More projects will be added as I grow and explore new ideas.
 
-## Live Demos
+---
+
+### ✦ Live Demos
 
 - **Pseudo‑3D Flying Game:**  
   https://jakoblite.github.io/CodeMap/html/Skoleprosjekt/flying.html
@@ -17,7 +24,7 @@ More projects will be added as I grow and explore new ideas.
 - **Other Experiments:**  
   Will add soon :)
 
-## Projects
+### ✦ Projects
 
 ### Pseudo-3D Flying Game (HTML + JS)
 A pseudo‑3D flying game built using canvas projection math. Includes movement, tilt, obstacles, and basic rendering techniques.
@@ -28,10 +35,14 @@ A collection of small assignments, tests, and interactive pages created as schoo
 ### JAKTEN (directly translated to English to "The Hunt")
 A small coordinate-based game featuring keyboard movement, basic enemy AI, scoring, and a simple objective system. 
 
-## Skills
+### ✦ Skills
 - HTML, CSS, JavaScript
 - Canvas rendering
 - Basic game logic and AI
 - Git and GitHub
 
 Thats all for me right now
+
+---
+
+<p align="center"><sub>Made by Jakob · Built with plain HTML, JS, and curiosity</sub></p>
