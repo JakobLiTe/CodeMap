@@ -27,12 +27,14 @@ const ctx = canvas.getContext("2d");
 let obstacles = [];
 let spwnT = 0;
 let playerX = 0;
-let playerY = -0.2;
+let playerY = 0.1;
 let tilt = 0;
 let lives = 3;
 let isDead = false;
 let dT = 0;
 let score = 0;
+let shipZ = 1.2;
+let invuln = 0;
 
 const bgm      = document.getElementById("bgm");
 const startSfx = document.getElementById("startSfx");
@@ -42,7 +44,6 @@ const hitSfx   = document.getElementById("hitSfx");
 bgm.volume = 0.8;
 
 let gameOver = false;
-
 let firstPlay = false;
 
 window.addEventListener("keydown", () => {
@@ -50,13 +51,13 @@ window.addEventListener("keydown", () => {
         firstPlay = true;
         bgm.play().catch(()=>{});
         startSfx.play().catch(()=>{});
+        playerY = 0.1;
     }
 });
 
 function resize() {
     canvas.width  = window.innerWidth;
     canvas.height = window.innerHeight;
-    
 }
 resize();
 window.addEventListener("resize", resize);
@@ -75,14 +76,12 @@ window.addEventListener("keydown", e => {
 
 function spawnObstacle() {
     let zone = Math.random();
-
     let xVal;
     if (zone < 0.5) {
         xVal = (Math.random() - 0.5) * 1.6;
     } else {
         xVal = (Math.random() < 0.5 ? -1.5 : 1.5) + (Math.random() * 0.4 - 0.2);
     }
-
     obstacles.push({
         x: xVal,
         z: 8 + Math.random() * 1,
@@ -99,74 +98,69 @@ if (bgm.paused) {
 
 function update() {
   if (gameOver) return;
+  if (invuln > 0) {
+      invuln -= 0.03;
+  }
   if (isDead) {
     dT -= 0.03;
     if (dT <= 0) {
         isDead = false;
-        playerX = 0;
-        playerY = -0.2;
-        tilt = 0;
-    } else {
-        return;
     }
-}
-score += 1;
+  }
+  score += 1;
   let speed = 0.04;
 
-if (keys["ArrowLeft"])  { playerX -= speed; tilt = -0.3; }
-if (keys["ArrowRight"]) { playerX += speed; tilt = 0.3;  }
-if (keys["ArrowUp"])    { playerY -= speed; }
-if (keys["ArrowDown"])  { playerY += speed; }
+  if (keys["ArrowLeft"])  { playerX -= speed; tilt = -0.3; }
+  if (keys["ArrowRight"]) { playerX += speed; tilt = 0.3;  }
+  if (keys["ArrowUp"])    { playerY -= speed; }
+  if (keys["ArrowDown"])  { playerY += speed; }
 
-if (!keys["ArrowLeft"] && !keys["ArrowRight"]) {
-    tilt *= 0.8;
-}
+  if (!keys["ArrowLeft"] && !keys["ArrowRight"]) {
+      tilt *= 0.8;
+  }
 
-if (playerX < -1.6) playerX = -1.6;
-if (playerX >  1.6) playerX = 1.6;
-if (playerY < -0.5) playerY = -0.5;
-if (playerY >  0.4) playerY = 0.4;
+  if (playerX < -1.6) playerX = -1.6;
+  if (playerX >  1.6) playerX = 1.6;
+  if (playerY < -0.5) playerY = -0.5;
+  if (playerY >  0.4) playerY = 0.4;
 
-    obstacles.forEach(o => {
-        o.z -= 0.04;
-        o.x += o.drift;
-    });
+  obstacles.forEach(o => {
+      o.z -= 0.04;
+      o.x += o.drift;
+  });
 
-    obstacles = obstacles.filter(o => o.z > 0.3);
+  obstacles = obstacles.filter(o => o.z > 0.3);
 
-    obstacles.forEach(o => {
+  obstacles.forEach(o => {
     if (o.z < 1.4 && o.z > 0.8) {
-        if (Math.abs(o.x - playerX) < o.size + 0.12 && playerY > 0.5 - o.height - 0.05) {
+        if (invuln <= 0 && Math.abs(o.x - playerX) < o.size + 0.12 && playerY > 0.5 - o.height - 0.05) {
            hitSfx.play().catch(()=>{});
-
             lives--;
             isDead = true;
+            invuln = 0.8;
             dT = 0.8;
-
+            playerY = 0.1;
             if (lives <= 0) {
                deathSfx.play().catch(()=>{});
                gameOver = true;
             }
         }
     }
-});
+  });
 
-    spwnT -= 0.03;
-
-    if (spwnT <= 0) {
-        spawnObstacle();
-        spwnT = 0.6 + Math.random() * 1.2;
-    }
+  spwnT -= 0.03;
+  if (spwnT <= 0) {
+      spawnObstacle();
+      spwnT = 0.6 + Math.random() * 1.2;
+  }
 }
 
 function drawGroundGrid() {
     ctx.strokeStyle = "cyan";
-
-    for (let x = -8; x <= 8; x += 0.4) {
+    for (let x = -8; x <= 8; x += 0.7) {
         line3D(x, 0.5, 1, x, 0.5, 14);
     }
-
-    for (let z = 1; z <= 14; z += 0.5) {
+    for (let z = 1; z <= 14; z += 1.0) {
         line3D(-8, 0.5, z, 8, 0.5, z);
     }
 }
@@ -182,64 +176,87 @@ function drawObstacle(o) {
 }
 
 function drawShip() {
-    let z = 1;
+    let z = shipZ;
     let px = playerX;
     let py = playerY;
-    let angle = tilt;
+    let angle = tilt * 0.6;
+
     function rot(x, y) {
         return {
             x: px + (x * Math.cos(angle) - y * Math.sin(angle)),
             y: py + (x * Math.sin(angle) + y * Math.cos(angle))
         };
     }
-    let nose      = rot(0,   -0.28);
-    let cockpit   = rot(0,   -0.14);
-    let bodyL     = rot(-0.10, 0.00);
-    let bodyR     = rot( 0.10, 0.00);
-    let tailL     = rot(-0.08, 0.20);
-    let tailR     = rot( 0.08, 0.20);
-    let wingL     = rot(-0.55, 0.06);
-    let wingR     = rot( 0.55, 0.06);
-    let P = {};
-    function Pp(n,p){ P[n]=proj(p.x,p.y,z); }
-    Pp("nose",nose);
-    Pp("cockpit",cockpit);
-    Pp("bodyL",bodyL);
-    Pp("bodyR",bodyR);
-    Pp("tailL",tailL);
-    Pp("tailR",tailR);
-    Pp("wingL",wingL);
-    Pp("wingR",wingR);
-    ctx.fillStyle="black";
+
+    let pts = {
+        nose:    rot(0, -0.28),
+        cockpit: rot(0, -0.14),
+        bodyL:   rot(-0.10, 0.00),
+        bodyR:   rot( 0.10, 0.00),
+        tailL:   rot(-0.08, 0.20),
+        tailR:   rot( 0.08, 0.20),
+        wingL:   rot(-0.55, 0.06),
+        wingR:   rot( 0.55, 0.06)
+    };
+
+    for (let k in pts) pts[k] = projShip(pts[k].x, pts[k].y, z);
+
     ctx.beginPath();
-    ctx.moveTo(P.nose.x, P.nose.y);
-    ctx.lineTo(P.bodyL.x, P.bodyL.y);
-    ctx.lineTo(P.tailL.x, P.tailL.y);
-    ctx.lineTo(P.tailR.x, P.tailR.y);
-    ctx.lineTo(P.bodyR.x, P.bodyR.y);
+    ctx.moveTo(pts.nose.x, pts.nose.y);
+    ctx.lineTo(pts.bodyL.x, pts.bodyL.y);
+    ctx.lineTo(pts.tailL.x, pts.tailL.y);
+    ctx.lineTo(pts.tailR.x, pts.tailR.y);
+    ctx.lineTo(pts.bodyR.x, pts.bodyR.y);
+    ctx.closePath();
+    ctx.fillStyle = "black";
+    ctx.fill();
+    ctx.strokeStyle = "cyan";
+    ctx.lineWidth = 3;
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(pts.bodyL.x, pts.bodyL.y);
+    ctx.lineTo(pts.wingL.x, pts.wingL.y);
+    ctx.lineTo(pts.tailL.x, pts.tailL.y);
     ctx.closePath();
     ctx.fill();
+
     ctx.beginPath();
-    ctx.moveTo(P.bodyL.x, P.bodyL.y);
-    ctx.lineTo(P.wingL.x, P.wingL.y);
-    ctx.lineTo(P.tailL.x, P.tailL.y);
+    ctx.moveTo(pts.bodyR.x, pts.bodyR.y);
+    ctx.lineTo(pts.wingR.x, pts.wingR.y);
+    ctx.lineTo(pts.tailR.x, pts.tailR.y);
     ctx.closePath();
     ctx.fill();
+
     ctx.beginPath();
-    ctx.moveTo(P.bodyR.x, P.bodyR.y);
-    ctx.lineTo(P.wingR.x, P.wingR.y);
-    ctx.lineTo(P.tailR.x, P.tailR.y);
+    ctx.moveTo(pts.bodyL.x, pts.bodyL.y);
+    ctx.lineTo(pts.wingL.x, pts.wingL.y);
+    ctx.lineTo(pts.tailL.x, pts.tailL.y);
     ctx.closePath();
-    ctx.fill();
-    function L(a,b){ line3D(a.x,a.y,z,b.x,b.y,z); }
-    L(nose, cockpit);
-    L(cockpit, bodyL);
-    L(cockpit, bodyR);
-    L(bodyL, tailL);
-    L(bodyR, tailR);
-    L(tailL, tailR);
-    L(bodyL, wingL);
-    L(bodyR, wingR);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(pts.bodyR.x, pts.bodyR.y);
+    ctx.lineTo(pts.wingR.x, pts.wingR.y);
+    ctx.lineTo(pts.tailR.x, pts.tailR.y);
+    ctx.closePath();
+    ctx.stroke();
+
+    function L(a, b) {
+        ctx.beginPath();
+        ctx.moveTo(a.x, a.y);
+        ctx.lineTo(b.x, b.y);
+        ctx.stroke();
+    }
+
+    L(pts.nose, pts.cockpit);
+    L(pts.cockpit, pts.bodyL);
+    L(pts.cockpit, pts.bodyR);
+    L(pts.bodyL, pts.tailL);
+    L(pts.bodyR, pts.tailR);
+    L(pts.tailL, pts.tailR);
+    L(pts.bodyL, pts.wingL);
+    L(pts.bodyR, pts.wingR);
 }
 
 function drawMountains() {
@@ -281,7 +298,15 @@ function proj(x, y, z) {
     let scale = f / z;        
     return {
         x: canvas.width / 2 + x * scale,
-        y: canvas.height / 1.3 + y * scale
+        y: canvas.height / 1.38 + y * scale
+    };
+}
+function projShip(x, y, z) {
+    const f = 300;
+    const scale = f / z;
+    return {
+        x: canvas.width / 2 + x * scale,
+        y: canvas.height * 0.80 + y * scale
     };
 }
 function line3D(x1, y1, z1, x2, y2, z2) {
