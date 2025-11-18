@@ -35,13 +35,17 @@ A collection of small assignments, tests, and interactive pages created as schoo
 A small coordinate-based game featuring keyboard movement, basic enemy AI, scoring, and a simple objective system. 
 
 ### ✦ Skills
+<p align="center">
+  <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/html5/html5-original.svg" width="55px" />
+  <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/css3/css3-original.svg" width="55px" />
+  <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/javascript/javascript-original.svg" width="55px" />
+  <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/vscode/vscode-original.svg" width="55px" />
+  <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/git/git-original.svg" width="55px" />
+</p>
+
 - HTML, CSS, JavaScript
 - Canvas rendering
 - Basic game logic and AI
 - Git and GitHub
 
 Thats all for me right now
-
----
-
-<p align="center"><sub>Made by Jakob · Built with plain HTML, JS, and curiosity</sub></p>
