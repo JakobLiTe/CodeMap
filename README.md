@@ -14,11 +14,14 @@ More projects will be added as I grow and explore new ideas.
 
 ### ✦ Live Demos
 
-- **Pseudo‑3D Flying Game:**  
+- **Flying Game:**  
   https://jakoblite.github.io/CodeMap/html/Skoleprosjekt/flying.html
 
 - **JAKTEN (“The Hunt”):**  
   https://jakoblite.github.io/CodeMap/html/Jakten%20(POLISHED)/index.html
+
+- **Godot Testing**
+  Trying to make a project in godot, will update when i get motivation or anything
 
 - **Other Experiments:**  
   Will add soon :)
