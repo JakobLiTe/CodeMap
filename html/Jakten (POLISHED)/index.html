@@ -27,13 +27,9 @@
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
 
-    // Load images
-    const playerImg = new Image();
-    playerImg.src = "player.png";
-    const enemyImg = new Image();
-    enemyImg.src = "enemy.png";
+    const playerColor = "cyan";
+    const enemyColor = "red";
 
-    // Game state variaqbles
     let spillTilstand = "meny";
     let score = 0;
 
@@ -64,11 +60,14 @@
     const keys = {};
 
     window.addEventListener("keydown", (e) => {
-      keys[e.key] = true;
+      // normalize key to lowercase so WASD vs wasd doesn't matter
+      const k = String(e.key).toLowerCase();
+      keys[k] = true;
     });
 
     window.addEventListener("keyup", (e) => {
-      keys[e.key] = false;
+      const k = String(e.key).toLowerCase();
+      keys[k] = false;
     });
 
     canvas.addEventListener("click", () => {
@@ -87,11 +86,28 @@
     }
 
     function update() {
-      if (keys["ArrowRight"]) spiller.x += spiller.speed;
-      if (keys["ArrowLeft"]) spiller.x -= spiller.speed;
-      if (keys["ArrowDown"]) spiller.y += spiller.speed;
-      if (keys["ArrowUp"]) spiller.y -= spiller.speed;
-    // Move enemy smoothly toward player
+      let vx = 0;
+      let vy = 0;
+
+      if (keys['arrowright'] || keys['right']) vx += 1;
+      if (keys['arrowleft']  || keys['left'])  vx -= 1;
+      if (keys['arrowdown']  || keys['down'])  vy += 1;
+      if (keys['arrowup']    || keys['up'])    vy -= 1;
+
+      if (keys['d']) vx += 1;
+      if (keys['a']) vx -= 1;
+      if (keys['s']) vy += 1;
+      if (keys['w']) vy -= 1;
+
+      vx *= spiller.speed;
+      vy *= spiller.speed;
+
+      spiller.x += vx;
+      spiller.y += vy;
+
+      spiller.x = Math.max(0, Math.min(canvas.width - spiller.width, spiller.x));
+      spiller.y = Math.max(0, Math.min(canvas.height - spiller.height, spiller.y));
+
     const dx = spiller.x - fiende.x;
     const dy = spiller.y - fiende.y;
     const distance = Math.hypot(dx, dy);
@@ -126,31 +142,30 @@
 function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  // Player
-  ctx.drawImage(playerImg, spiller.x, spiller.y, spiller.width, spiller.height);
+  const size = 40;
+  for (let y = 0; y < canvas.height; y += size) {
+    for (let x = 0; x < canvas.width; x += size) {
+      ctx.fillStyle = ((x / size + y / size) % 2 === 0) ? "#111" : "#141414";
+      ctx.fillRect(x, y, size, size);
+    }
+  }
 
-  // Enemy — rotates to face the player
-  const dx = spiller.x + spiller.width / 2 - (fiende.x + fiende.width / 2);
-  const dy = spiller.y + spiller.height / 2 - (fiende.y + fiende.height / 2);
-  const angle = Math.atan2(dy, dx);
+  ctx.fillStyle = playerColor;
+  ctx.fillRect(spiller.x, spiller.y, spiller.width, spiller.height);
 
   ctx.save();
   ctx.translate(fiende.x + fiende.width / 2, fiende.y + fiende.height / 2);
+  const dx = spiller.x - fiende.x;
+  const dy = spiller.y - fiende.y;
+  const angle = Math.atan2(dy, dx);
   ctx.rotate(angle);
-  ctx.drawImage(
-    enemyImg,
-    -fiende.width / 2,
-    -fiende.height / 2,
-    fiende.width,
-    fiende.height
-  );
+  ctx.fillStyle = enemyColor;
+  ctx.fillRect(-fiende.width / 2, -fiende.height / 2, fiende.width, fiende.height);
   ctx.restore();
 
-  // Goal
   ctx.fillStyle = maal.color;
   ctx.fillRect(maal.x, maal.y, maal.width, maal.height);
 
-  // Score
   ctx.save();
   ctx.fillStyle = "white";
   ctx.font = "20px Arial";
@@ -189,15 +204,7 @@ function draw() {
       requestAnimationFrame(gameLoop);
     }
 
-    // Start after images load
-    let imagesLoaded = 0;
-    function startIfReady() {
-      imagesLoaded++;
-      if (imagesLoaded === 2) gameLoop();
-    }
-
-    playerImg.onload = startIfReady;
-    enemyImg.onload = startIfReady;
+    gameLoop();
   </script>
 </body>
 </html>
