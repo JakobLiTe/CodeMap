@@ -33,7 +33,7 @@
     const enemyImg = new Image();
     enemyImg.src = "enemy.png";
 
-    // Game state variables
+    // Game state variaqbles
     let spillTilstand = "meny";
     let score = 0;
 
@@ -115,6 +115,8 @@
         spiller.y = 500;
         maal.x = Math.random() * (canvas.width - 40);
         maal.y = Math.random() * (canvas.height - 40);
+        fiende.speed += 0.2;
+        spiller.speed += 0.05; 
         score++;
 ;
       }

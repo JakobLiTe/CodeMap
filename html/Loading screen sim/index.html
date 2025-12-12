@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Elder Scrolls VI</title>
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@700&display=swap');
+
+    * { margin:0; padding:0; box-sizing:border-box; }
+
+    body {
+        font-family: 'Cinzel', serif;
+        height: 100vh;
+        display:flex;
+        justify-content:center;
+        align-items:center;
+        background: url("https://i.pinimg.com/736x/50/0f/bc/500fbcee89ac1c13526574f23c6474a6.jpg") no-repeat center center/cover;
+        color:#e0e0e0;
+        overflow:hidden;
+        position:relative;
+    }
+
+    body::after {
+        content:"";
+        position:absolute;
+        top:0; left:0; width:100%; height:100%;
+        background: rgba(0,0,0,0.65);
+        backdrop-filter: blur(2px);
+        z-index:-1;
+    }
+
+    #menu, #loading-screen { text-align:center; }
+    #menu.hidden { display:none; }
+    #loading-screen { display:none; flex-direction:column; align-items:center; }
+    #loading-screen.active { display:flex; }
+
+    .title { font-size:72px; letter-spacing:6px; margin-bottom:40px; text-shadow:0 0 20px #9cc0ff; animation: pulseTitle 5s infinite; }
+
+    .menu-button {
+        font-size:26px; padding:14px 50px;
+        background: rgba(255,255,255,0.05); border:1px solid #7ca4d9;
+        color:#cdd9f4; cursor:pointer; margin-top:40px;
+        transition:.3s; border-radius:4px;
+    }
+
+    .menu-button:hover { background:rgba(255,255,255,0.15); box-shadow:0 0 15px #9ccbff; transform:scale(1.05); }
+
+    .sigil { font-size:100px; margin-bottom:40px; animation: rotate 20s linear infinite; opacity:0.9; text-shadow:0 0 25px #6bb1ff; }
+
+    .progress-bar { width:70%; height:14px; background: rgba(255,255,255,0.1); border-radius:14px; overflow:hidden; margin-bottom:20px; border:1px solid #7ca4d9; }
+
+    .progress-fill { height:100%; width:0%; background: linear-gradient(90deg, #6bb1ff, #3f7bbf); transition: width 2s linear; box-shadow:0 0 15px #6bb1ff; }
+
+    .percentage { font-size:22px; margin-bottom:20px; text-shadow:0 0 10px #7ca4d9; }
+
+    .tip { margin-top:30px; width:70%; padding:15px; border-left:3px solid #6bb1ff; color:#a9c6e8; font-style:italic; background: rgba(255,255,255,0.05); }
+
+    @keyframes pulseTitle { 0%,100%{text-shadow:0 0 15px #6bb1ff;} 50%{text-shadow:0 0 40px #9ccbff;} }
+    @keyframes rotate { from{transform:rotate(0deg);} to{transform:rotate(360deg);} }
+</style>
+</head>
+<body>
+
+<div id="menu">
+    <div class="title">THE ELDER SCROLLS VI</div>
+    <button class="menu-button" id="startBtn">NEW GAME</button>
+</div>
+
+<div id="loading-screen">
+    <div class="sigil">⛨</div>
+    <div class="progress-bar"><div class="progress-fill" id="fill"></div></div>
+    <div class="percentage" id="percent">0%</div>
+    <div class="tip" id="tipBox"></div>
+</div>
+
+<script>
+    const tips = [
+        "Whispers tell of the lands yet to be explored.",
+        "Mountains hide ancient ruins, waiting for a hero.",
+        "Dragons may slumber, but danger never sleeps.",
+        "Your choices will shape the fate of Tamriel.",
+        "Secrets lie where shadows linger and light fears to tread.",
+        "Forge alliances, or walk alone into legend.",
+        "Every step you take echoes through eternity.",
+        "The Elder Scrolls await those who dare."
+    ];
+
+    let percent = 0;
+    let tipIndex = 0;
+
+    const fillEl = document.getElementById("fill");
+    const percentEl = document.getElementById("percent");
+    const tipEl = document.getElementById("tipBox");
+    const startBtn = document.getElementById("startBtn");
+
+    const enterLoading = () => {
+        document.getElementById("menu").classList.add("hidden");
+        const loading = document.getElementById("loading-screen");
+        loading.classList.add("active");
+        updateTip();
+        slowLoad();
+    };
+
+    const slowLoad = () => {
+        setInterval(() => {
+            if(percent < 98){
+                percent += 1;
+                fillEl.style.width = `${percent}%`;
+                percentEl.textContent = `${percent}%`;
+            }
+        }, 200);
+    };
+
+    const updateTip = () => {
+        tipEl.textContent = tips[tipIndex];
+        setInterval(() => {
+            tipIndex = (tipIndex + 1) % tips.length;
+            tipEl.textContent = tips[tipIndex];
+        }, 7000);
+    };
+
+    // ES6 event listener, fixes broken button
+    startBtn.addEventListener('click', enterLoading);
+</script>
+
+</body>
+</html>
