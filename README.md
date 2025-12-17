@@ -44,4 +44,7 @@ More projects will most likely be added as i learn and stuff.
 
 </p>
 
-yay
+### + LISENCES
+https://jakoblite.github.io/CodeMap/LICENSE
+
+  
