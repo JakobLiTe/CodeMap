@@ -24,6 +24,8 @@
 <script>
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
+const staticCanvas = document.createElement("canvas");
+const staticCtx = staticCanvas.getContext("2d");
 let obstacles = [];
 let spwnT = 0;
 let playerX = 0;
@@ -58,7 +60,42 @@ window.addEventListener("keydown", () => {
 function resize() {
     canvas.width  = window.innerWidth;
     canvas.height = window.innerHeight;
+
+    staticCanvas.width = canvas.width;
+    staticCanvas.height = canvas.height;
+
+    buildStaticScene();
 }
+
+function buildStaticScene() {
+    staticCtx.clearRect(0, 0, staticCanvas.width, staticCanvas.height);
+    staticCtx.strokeStyle = "cyan";
+    staticCtx.lineWidth = 1;
+
+    // ground grid
+    staticCtx.beginPath();
+    for (let x = -8; x <= 8; x += 0.7) {
+        line3DTo(staticCtx, x, 0.5, 1, x, 0.5, 14);
+    }
+    for (let z = 1; z <= 14; z += 1.0) {
+        line3DTo(staticCtx, -8, 0.5, z, 8, 0.5, z);
+    }
+    staticCtx.stroke();
+
+    // mountains
+    staticCtx.lineWidth = 3;
+    const horizonY = -0.8;
+    const mx = [-10, -6, -3, 0, 2, 5, 9];
+    const my = [-0.4, -1.2, -0.5, -2.0, -0.7, -1.5, -0.3];
+    staticCtx.beginPath();
+    for (let i = 0; i < mx.length; i++) {
+        const p = proj(mx[i], horizonY + my[i], 3.2);
+        if (i === 0) staticCtx.moveTo(p.x, p.y);
+        else staticCtx.lineTo(p.x, p.y);
+    }
+    staticCtx.stroke();
+}
+
 resize();
 window.addEventListener("resize", resize);
 let keys = {};
@@ -133,6 +170,7 @@ function update() {
   obstacles.forEach(o => {
     if (o.z < 1.4 && o.z > 0.8) {
         if (invuln <= 0 && Math.abs(o.x - playerX) < o.size + 0.12 && playerY > 0.5 - o.height - 0.05) {
+           hitSfx.currentTime = 0;
            hitSfx.play().catch(()=>{});
             lives--;
             isDead = true;
@@ -154,15 +192,7 @@ function update() {
   }
 }
 
-function drawGroundGrid() {
-    ctx.strokeStyle = "cyan";
-    for (let x = -8; x <= 8; x += 0.7) {
-        line3D(x, 0.5, 1, x, 0.5, 14);
-    }
-    for (let z = 1; z <= 14; z += 1.0) {
-        line3D(-8, 0.5, z, 8, 0.5, z);
-    }
-}
+function drawGroundGrid() {}
 
 function drawObstacle(o) {
     let w = o.size;   
@@ -258,40 +288,15 @@ function drawShip() {
     L(pts.bodyR, pts.wingR);
 }
 
-function drawMountains() {
-    ctx.strokeStyle = "cyan";
-    ctx.lineWidth = 3;
-    const horizonY = -0.8;
-    const mx = [-10, -6, -3, 0, 2, 5, 9];
-    const my = [-0.4, -1.2, -0.5, -2.0, -0.7, -1.5, -0.3];
-    ctx.beginPath();
-    for (let i = 0; i < mx.length; i++) {
-        const p = proj(mx[i], horizonY + my[i], 3.2);
-        if (i === 0) ctx.moveTo(p.x, p.y);
-        else ctx.lineTo(p.x, p.y);
-    }
-    ctx.stroke();
+function drawMountains() {}
+
+function line3DTo(c, x1, y1, z1, x2, y2, z2) {
+    const a = proj(x1, y1, z1);
+    const b = proj(x2, y2, z2);
+    c.moveTo(a.x, a.y);
+    c.lineTo(b.x, b.y);
 }
 
-function render() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.textAlign = "left";
-    ctx.fillStyle = "cyan";
-    ctx.font = "24px monospace";
-    ctx.fillText("Lives: " + lives, 20, 40);
-    ctx.fillText("Score: " + score, 20, 70);
-    drawGroundGrid();
-    drawMountains();
-    drawShip();
-    obstacles.forEach(drawObstacle);
-    if (gameOver) {
-        ctx.fillStyle = "cyan";
-        ctx.font = "60px monospace";
-        ctx.textAlign = "center";
-        ctx.fillText("GAME OVER", canvas.width/2, canvas.height/2);
-        return;
-    }
-}
 function proj(x, y, z) {
     let f = 300;                
     let scale = f / z;        
@@ -317,6 +322,24 @@ function line3D(x1, y1, z1, x2, y2, z2) {
     ctx.stroke();
 }
 
+function render() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.textAlign = "left";
+    ctx.fillStyle = "cyan";
+    ctx.font = "24px monospace";
+    ctx.fillText("Lives: " + lives, 20, 40);
+    ctx.fillText("Score: " + score, 20, 70);
+    ctx.drawImage(staticCanvas, 0, 0);
+    drawShip();
+    obstacles.forEach(drawObstacle);
+    if (gameOver) {
+        ctx.fillStyle = "cyan";
+        ctx.font = "60px monospace";
+        ctx.textAlign = "center";
+        ctx.fillText("GAME OVER", canvas.width/2, canvas.height/2);
+        return;
+    }
+}
 function loop() {
     update();
     render();

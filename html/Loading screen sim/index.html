@@ -58,6 +58,95 @@
 
     @keyframes pulseTitle { 0%,100%{text-shadow:0 0 15px #6bb1ff;} 50%{text-shadow:0 0 40px #9ccbff;} }
     @keyframes rotate { from{transform:rotate(0deg);} to{transform:rotate(360deg);} }
+
+    #bsod {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: #0000aa;
+        color: #ffffff;
+        font-family: 'Courier New', monospace;
+        padding: 40px;
+        z-index: 999;
+        overflow: hidden;
+    }
+
+    #bsod.active {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+    }
+
+    .bsod-text {
+        font-size: 18px;
+        line-height: 1.8;
+        white-space: pre-wrap;
+    }
+
+    #grub-screen {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: #000;
+        color: #aaa;
+        font-family: 'Courier New', monospace;
+        padding: 40px;
+        z-index: 500;
+        overflow: auto;
+    }
+
+    #grub-screen.active {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+
+    .grub-menu {
+        max-width: 600px;
+        margin: 0 auto;
+    }
+
+    .grub-title {
+        color: #fff;
+        font-size: 16px;
+        margin-bottom: 20px;
+        font-weight: bold;
+    }
+
+    .grub-entry {
+        padding: 10px 20px;
+        margin: 5px 0;
+        cursor: pointer;
+        transition: 0.2s;
+        border-left: 3px solid transparent;
+    }
+
+    .grub-entry:hover {
+        background: #1a1a1a;
+        border-left-color: #0078d4;
+        color: #fff;
+    }
+
+    .grub-entry.selected {
+        background: #1a1a1a;
+        border-left-color: #0078d4;
+        color: #fff;
+    }
+
+    .grub-footer {
+        margin-top: 40px;
+        color: #666;
+        font-size: 12px;
+    }
+
 </style>
 </head>
 <body>
@@ -73,6 +162,46 @@
     <div class="percentage" id="percent">0%</div>
     <div class="tip" id="tipBox"></div>
 </div>
+
+<div id="bsod">
+    <div class="bsod-text">
+:(
+A problem has been detected and windows has been shut down to prevent damage to your computer.
+
+DRIVER_IRQL_NOT_LESS_OR_EQUAL
+
+If this is the first time you've seen this Stop error screen, restart your computer. If this screen appears again, follow these steps:
+
+Check to make sure any new hardware or software is properly installed. If this is a new installation, ask your hardware or software manufacturer for any windows updates you might need.
+
+If problems continue, disable or remove any newly installed hardware or software. Disable BIOS memory options such as caching or shadowing.
+
+Technical information:
+*** STOP: 0x0000000A (0x00000004, 0x00000002, 0x00000000, 0x00046a6d)
+
+Press any key to continue...
+    </div>
+</div>
+
+<div id="grub-screen">
+    <div class="grub-menu">
+        <div class="grub-title">GNU GRUB version 2.06</div>
+        <div style="margin-bottom: 30px; color: #666; font-size: 12px;">Use arrow keys to select. Press ENTER to boot.</div>
+        
+        <div class="grub-entry selected" onclick="bootOS('ubuntu')">Ubuntu 22.04 LTS</div>
+        <div class="grub-entry" onclick="bootOS('windows')">Windows 11</div>
+        <div class="grub-entry" onclick="bootOS('arch')">Arch Linux</div>
+        <div class="grub-entry" onclick="bootOS('macos')">macOS Sequoia</div>
+
+        <div class="grub-footer">grub></div>
+    </div>
+</div>
+
+<div id="ubuntu-tui" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; color: #0f0; font-family: 'Courier New', monospace; z-index: 100; padding: 20px; box-sizing: border-box; overflow: hidden;">
+    <div id="terminal-output" style="height: 100%; overflow-y: auto; white-space: pre; font-size: 13px; line-height: 1.4;"></div>
+</div>
+
+<div id="macos-error" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 500; flex-direction: column; justify-content: center; align-items: center; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;"><div id="macos-error-content" style="text-align: center; max-width: 600px;"><h1 style="color: #fff; font-size: 40px; font-weight: 300; margin: 0 0 20px 0; letter-spacing: -1px;">macOS cannot be installed on this device</h1><p style="color: #ccc; font-size: 17px; margin: 8px 0; font-weight: 300; line-height: 1.5;">This computer is not compatible with macOS Sequoia.</p><div id="macos-error-hint" style="color: #888; font-size: 14px; margin-top: 30px; font-weight: 300;">Press ESC to return</div></div></div>
 
 <script>
     const tips = [
@@ -103,14 +232,337 @@
     };
 
     const slowLoad = () => {
-        setInterval(() => {
-            if(percent < 98){
+        const interval = setInterval(() => {
+            if(percent < 99){
                 percent += 1;
                 fillEl.style.width = `${percent}%`;
                 percentEl.textContent = `${percent}%`;
+            } else if(percent === 99) {
+                clearInterval(interval);
+                document.getElementById("loading-screen").style.display = "none";
+                document.getElementById("bsod").classList.add("active");
+                percent = 99;
+                setTimeout(() => {
+                    document.getElementById("bsod").classList.remove("active");
+                    document.getElementById("grub-screen").classList.add("active");
+                }, 3000);
             }
         }, 200);
     };
+
+    const bootOS = (os) => {
+        document.getElementById("grub-screen").classList.remove("active");
+        
+        if (os === 'ubuntu') {
+            setTimeout(() => {
+                document.getElementById("ubuntu-tui").style.display = "flex";
+                showUbuntuTUI();
+            }, 1500);
+        } else if (os === 'windows') {
+            const spinner = document.createElement('div');
+            spinner.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: #0078d4;
+                z-index: 500;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                font-family: 'Courier New', monospace;
+                color: white;
+                font-size: 14px;
+            `;
+            spinner.innerHTML = `
+                <div style="font-size: 40px; margin-bottom: 20px;">⊙ ⊙</div>
+                <div>Windows is starting...</div>
+                <div style="font-size: 11px; color: rgba(255,255,255,0.7); margin-top: 20px;">This is taking longer than expected</div>
+            `;
+            document.body.appendChild(spinner);
+            
+            setTimeout(() => {
+                spinner.remove();
+                document.getElementById("bsod").classList.add("active");
+                setTimeout(() => {
+                    document.getElementById("bsod").classList.remove("active");
+                    document.getElementById("grub-screen").classList.add("active");
+                    selectedOS = 0;
+                    updateGrubSelection();
+                }, 3000);
+            }, 3000);
+        } else if (os === 'arch') {
+            const panic = document.createElement('div');
+            panic.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: #000;
+                z-index: 500;
+                padding: 40px;
+                color: #f00;
+                font-family: 'Courier New', monospace;
+                font-size: 12px;
+                overflow: auto;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+            `;
+            panic.innerHTML = `
+[    0.000000] Linux version 6.5.0-arch1-1
+[    2.345678] Kernel panic - not syncing: VFS: Unable to mount root fs
+[    3.678901] Rebooting in 5 seconds...
+            `;
+            document.body.appendChild(panic);
+            
+            setTimeout(() => {
+                panic.remove();
+                document.getElementById("bsod").classList.add("active");
+                
+                setTimeout(() => {
+                    document.getElementById("bsod").classList.remove("active");
+                    document.getElementById("grub-screen").classList.add("active");
+                    selectedOS = 0;
+                    updateGrubSelection();
+                }, 5000);
+            }, 5000);
+        } else if (os === 'macos') {
+            document.getElementById("grub-screen").classList.remove("active");
+            const macos = document.getElementById("macos-error");
+            macos.style.display = "flex";
+        }
+    };
+
+    let terminal = {
+        output: null,
+        buffer: '',
+        loginState: 'login',
+        currentUser: '',
+        currentDir: 'home',
+        history: [],
+        historyIndex: 0
+    };
+
+    const getPrompt = () => {
+        const dir = terminal.currentDir === 'Desktop' ? '~/Desktop' : '~';
+        return terminal.currentUser + '@ubuntu-elite:' + dir + '$ ';
+    };
+
+    const initTerminal = () => {
+        terminal.output = document.getElementById('terminal-output');
+        terminal.buffer = '';
+        terminal.loginState = 'login';
+        terminal.currentUser = '';
+        terminal.currentDir = 'home';
+        terminal.history = [];
+        
+        terminal.output.textContent = 'ubuntu-elite login: ';
+        
+        document.addEventListener('keydown', handleTerminalKeydown);
+        document.addEventListener('keypress', handleTerminalKeypress);
+    };
+
+    const handleTerminalKeypress = (e) => {
+        if (document.getElementById('ubuntu-tui').style.display === 'none') return;
+        if (e.ctrlKey || e.altKey || e.metaKey) return;
+        
+        e.preventDefault();
+        
+        if (e.key === 'Enter') {
+            processCommand(terminal.buffer);
+            terminal.buffer = '';
+        } else if (e.key.length === 1) {
+            terminal.buffer += e.key;
+            updateDisplay();
+        }
+    };
+
+    const handleTerminalKeydown = (e) => {
+        if (document.getElementById('ubuntu-tui').style.display === 'none') return;
+        
+        if (e.key === 'Backspace') {
+            e.preventDefault();
+            terminal.buffer = terminal.buffer.slice(0, -1);
+            updateDisplay();
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            if (terminal.historyIndex > 0) {
+                terminal.historyIndex--;
+                terminal.buffer = terminal.history[terminal.historyIndex] || '';
+                updateDisplay();
+            }
+        } else if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            if (terminal.historyIndex < terminal.history.length - 1) {
+                terminal.historyIndex++;
+                terminal.buffer = terminal.history[terminal.historyIndex] || '';
+                updateDisplay();
+            } else {
+                terminal.historyIndex = terminal.history.length;
+                terminal.buffer = '';
+                updateDisplay();
+            }
+        }
+    };
+
+    const updateDisplay = () => {
+        const output = terminal.output;
+        const lines = output.textContent.split('\n');
+        
+        if (terminal.loginState === 'login') {
+            lines[lines.length - 1] = 'ubuntu-elite login: ' + terminal.buffer + '█';
+        } else if (terminal.loginState === 'password') {
+            lines[lines.length - 1] = 'Password: ' + ('*'.repeat(terminal.buffer.length)) + '█';
+        } else {
+            const prompt = getPrompt();
+            lines[lines.length - 1] = prompt + terminal.buffer + '█';
+        }
+        
+        output.textContent = lines.join('\n');
+        output.parentElement.scrollTop = output.parentElement.scrollHeight;
+    };
+
+    const processCommand = (cmd) => {
+        const output = terminal.output;
+        let text = output.textContent;
+        
+        // Remove cursor from current line
+        text = text.replace(/█$/, '');
+        
+        if (terminal.loginState === 'login') {
+            terminal.currentUser = cmd || 'root';
+            terminal.loginState = 'password';
+            text += '\nPassword: █';
+            output.textContent = text;
+        } else if (terminal.loginState === 'password') {
+            terminal.loginState = 'shell';
+            text += '\n\nWelcome to Ubuntu 24.04 LTS (Noble Numbat)\nLast login: Sun Dec 15 10:05:22 UTC 2024\n\n' + getPrompt() + '█';
+            output.textContent = text;
+        } else {
+            const fullCmd = cmd.toLowerCase().trim();
+            if (fullCmd) {
+                terminal.history.push(cmd);
+            }
+            terminal.historyIndex = terminal.history.length;
+            
+            text += '\n' + cmd;
+            
+            if (!fullCmd) {
+                text += '\n' + getPrompt() + '█';
+            } else if (fullCmd === 'ls' || fullCmd === 'ls -la') {
+                const lsOutput = terminal.currentDir === 'Desktop' 
+                    ? 'total 16\ndrwxr-xr-x  3 ' + terminal.currentUser + '  staff   96 Dec 15 10:14 .\ndrwxr-xr-x  8 ' + terminal.currentUser + '  staff  256 Dec 15 10:05 ..\n-rwxr-xr-x  1 ' + terminal.currentUser + '  staff  2.8K Dec 15 10:12 ES6'
+                    : 'total 32\ndrwxr-xr-x  5 ' + terminal.currentUser + '  staff   160 Dec 15 10:14 .\ndrwxr-xr-x 12 root     root   384 Dec 12  2024 ..\n-rw-r--r--  1 ' + terminal.currentUser + '  staff    45 Dec 15 10:05 .bashrc\n-rwxr-xr-x  1 ' + terminal.currentUser + '  staff  2.8K Dec 15 10:12 ES6\ndrwxr-xr-x  7 ' + terminal.currentUser + '  staff   224 Dec 12  2024 Desktop';
+                text += '\n' + lsOutput + '\n\n' + getPrompt() + '█';
+            } else if (fullCmd.startsWith('cd ')) {
+                const target = fullCmd.substring(3).trim();
+                if (target.includes('desktop') || target.includes('Desktop')) {
+                    terminal.currentDir = 'Desktop';
+                    text += '\n' + getPrompt() + '█';
+                } else {
+                    text += '\nbash: cd: ' + target + ': No such file or directory\n' + getPrompt() + '█';
+                }
+            } else if (fullCmd === './es6' && terminal.currentDir === 'Desktop') {
+                text += '\nStarting The Elder Scrolls VI...\n';
+                output.textContent = text;
+                output.parentElement.scrollTop = output.parentElement.scrollHeight;
+                setTimeout(() => {
+                    document.getElementById("ubuntu-tui").style.display = "none";
+                    document.getElementById("menu").classList.remove("hidden");
+                    percent = 0;
+                    fillEl.style.width = '0%';
+                    percentEl.textContent = '0%';
+                }, 1500);
+                return;
+            } else if (fullCmd === './es6') {
+                text += '\nbash: ./es6: No such file or directory\n' + getPrompt() + '█';
+            } else if (fullCmd === 'pwd') {
+                const cwd = terminal.currentDir === 'Desktop' ? '/home/' + terminal.currentUser + '/Desktop' : '/home/' + terminal.currentUser;
+                text += '\n' + cwd + '\n\n' + getPrompt() + '█';
+            } else if (fullCmd === 'whoami') {
+                text += '\n' + terminal.currentUser + '\n\n' + getPrompt() + '█';
+            } else if (fullCmd === 'help') {
+                text += '\nCommands: ls, cd, pwd, whoami, ./ES6 (Desktop only), clear, help\n\n' + getPrompt() + '█';
+            } else if (fullCmd === 'clear') {
+                text = getPrompt() + '█';
+            } else {
+                text += '\nbash: ' + fullCmd + ': command not found\n\n' + getPrompt() + '█';
+            }
+            
+            output.textContent = text;
+        }
+        
+        const container = output.parentElement;
+        container.scrollTop = container.scrollHeight;
+    };
+
+    const showUbuntuTUI = () => {
+        if (!terminal.output) {
+            initTerminal();
+        } else {
+            terminal.output.textContent = 'ubuntu-elite login: ';
+            terminal.buffer = '';
+            terminal.loginState = 'login';
+            terminal.currentUser = '';
+            terminal.currentDir = 'home';
+            terminal.history = [];
+            terminal.historyIndex = 0;
+        }
+    };
+
+    const returnToMenu = () => {
+        document.getElementById("ubuntu-tui").style.display = "none";
+        document.getElementById("menu").classList.remove("hidden");
+        percent = 0;
+        fillEl.style.width = '0%';
+        percentEl.textContent = '0%';
+    };
+
+    const showLogin = () => {};
+    const checkPassword = () => {};
+    const launchGame = () => {};
+    const updateTime = () => {};
+    const openWindow = () => {};
+    const closeWindow = () => {};
+    const minimizeWindow = () => {};
+    const maximizeWindow = () => {};
+    const showGameError = () => {};
+    const closeGameError = () => {};
+    const openSettingsPage = () => {};
+    const closeSettingsPage = () => {};
+    const changeTheme = () => {};
+    const toggleDarkMode = () => {};
+    const toggleTransparency = () => {};
+    const executeCommand = () => {};
+
+    // Window dragging
+    let draggedWindow = null;
+    let offsetX = 0;
+    let offsetY = 0;
+
+    document.addEventListener('mousedown', (e) => {
+        const header = e.target.closest('.window-header');
+        if (header) {
+            draggedWindow = header.closest('.window');
+            offsetX = e.clientX - draggedWindow.offsetLeft;
+            offsetY = e.clientY - draggedWindow.offsetTop;
+        }
+    });
+
+    document.addEventListener('mousemove', (e) => {
+        if (draggedWindow) {
+            draggedWindow.style.left = (e.clientX - offsetX) + 'px';
+            draggedWindow.style.top = (e.clientY - offsetY) + 'px';
+        }
+    });
+
+    document.addEventListener('mouseup', () => {
+        draggedWindow = null;
+    });
 
     const updateTip = () => {
         tipEl.textContent = tips[tipIndex];
@@ -122,7 +574,48 @@
 
     // ES6 event listener, fixes broken button
     startBtn.addEventListener('click', enterLoading);
+
+    // GRUB keyboard navigation
+    let selectedOS = 0;
+    const osOptions = ['ubuntu', 'windows', 'arch', 'macos'];
+    
+    document.addEventListener('keydown', (e) => {
+        const grub = document.getElementById("grub-screen");
+        const macos = document.getElementById("macos-error");
+        
+        // ESC returns from macOS error
+        if (e.key === 'Escape' && macos.style.display === "flex") {
+            macos.style.display = "none";
+            grub.classList.add("active");
+            return;
+        }
+        
+        if (!grub.classList.contains("active")) return;
+        
+        const entries = grub.querySelectorAll('.grub-entry');
+        
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            selectedOS = (selectedOS + 1) % osOptions.length;
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            selectedOS = (selectedOS - 1 + osOptions.length) % osOptions.length;
+        } else if (e.key === 'Enter') {
+            e.preventDefault();
+            bootOS(osOptions[selectedOS]);
+        }
+        
+        entries.forEach((entry, idx) => {
+            if (idx === selectedOS) {
+                entry.classList.add('selected');
+            } else {
+                entry.classList.remove('selected');
+            }
+        });
+    });
 </script>
+
+
 
 </body>
 </html>

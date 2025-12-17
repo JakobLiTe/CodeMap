@@ -60,7 +60,6 @@
     const keys = {};
 
     window.addEventListener("keydown", (e) => {
-      // normalize key to lowercase so WASD vs wasd doesn't matter
       const k = String(e.key).toLowerCase();
       keys[k] = true;
     });
@@ -131,8 +130,8 @@
         spiller.y = 500;
         maal.x = Math.random() * (canvas.width - 40);
         maal.y = Math.random() * (canvas.height - 40);
-        fiende.speed += 0.2;
-        spiller.speed += 0.05; 
+        fiende.speed += 0.17;
+        spiller.speed += 0.2; 
         score++;
 ;
       }
@@ -190,7 +189,7 @@ function draw() {
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       ctx.font = "20px Arial";
-      ctx.fillText("Trykk for å starte", canvas.width / 2, canvas.height / 2);
+      ctx.fillText("Click to start", canvas.width / 2, canvas.height / 2);
     }
 
     function gameLoop() {
