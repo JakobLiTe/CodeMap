@@ -45,6 +45,6 @@ More projects will most likely be added as i learn and stuff.
 </p>
 
 ### + LICENSES
-https://jakoblite.github.io/CodeMap/LICENSE
+https://github.com/JakobLiTe/CodeMap/blob/main/LICENSE
 
   
