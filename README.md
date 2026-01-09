@@ -19,7 +19,7 @@ More projects will most likely be added as i learn and stuff.
   https://jakoblite.github.io/CodeMap/html/Skoleprosjekt/flying.html
 
 - **JAKTEN:**  
-  https://jakoblite.github.io/CodeMap/html/Jakten%20(POLISHED)/index.html
+  https://jakoblite.github.io/CodeMap/html/Jakten%20but%20better/index.html
 
 - **LOADING SCREEN SIMULATOR (Yes, really):**  
   https://jakoblite.github.io/CodeMap/html/Loading%20screen%20sim/index.html
