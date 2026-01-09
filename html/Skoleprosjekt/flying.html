@@ -16,16 +16,22 @@
 </head>
 <body>
 <canvas id="game"></canvas>
-
+<!-- Lager først lydfilene inn til id-er som bgm og mange sfx-->
 <audio id="bgm"      src="bgm.wav" loop></audio>
 <audio id="startSfx" src="game_start.wav"></audio>
 <audio id="deathSfx" src="death.wav"></audio>
 <audio id="hitSfx"   src="hit.ogg"></audio>
 <script>
+// Star Fox-ish spill laget i JS canvas
+// All 3d er bull og lages med matte
+
+// Canvas og context
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
+// Brukes til bg så jeg slipper å redrawe den hele tiden, du skjønner, det ble laggy som faen hvis den redrawet
 const staticCanvas = document.createElement("canvas");
 const staticCtx = staticCanvas.getContext("2d");
+// variabler i den SUPERIORE METODEN, LET!!! TAKE NOTES ALEXANDER
 let obstacles = [];
 let spwnT = 0;
 let playerX = 0;
@@ -37,7 +43,10 @@ let dT = 0;
 let score = 0;
 let shipZ = 1.2;
 let invuln = 0;
+let speed = 0.04;
 
+
+// Musikkvariabler, disse tar lyden fra mappe og legger dem inn i spillet
 const bgm      = document.getElementById("bgm");
 const startSfx = document.getElementById("startSfx");
 const deathSfx = document.getElementById("deathSfx");
@@ -47,7 +56,8 @@ bgm.volume = 0.8;
 
 let gameOver = false;
 let firstPlay = false;
-
+// Ok, så denne er litt dum. Jeg fikk ikke lyden til å spille etter refresh så nå starter lyden på første knappetrykk etter refresh
+// Nei, jeg gidder virkelig ikke lage en restart funksjon
 window.addEventListener("keydown", () => {
     if (!firstPlay) {
         firstPlay = true;
@@ -56,7 +66,7 @@ window.addEventListener("keydown", () => {
         playerY = 0.1;
     }
 });
-
+// canvas = noenlunde vindures
 function resize() {
     canvas.width  = window.innerWidth;
     canvas.height = window.innerHeight;
@@ -66,13 +76,12 @@ function resize() {
 
     buildStaticScene();
 }
-
+//bakgrunn
 function buildStaticScene() {
     staticCtx.clearRect(0, 0, staticCanvas.width, staticCanvas.height);
     staticCtx.strokeStyle = "cyan";
     staticCtx.lineWidth = 1;
-
-    // ground grid
+//bakke
     staticCtx.beginPath();
     for (let x = -8; x <= 8; x += 0.7) {
         line3DTo(staticCtx, x, 0.5, 1, x, 0.5, 14);
@@ -82,7 +91,7 @@ function buildStaticScene() {
     }
     staticCtx.stroke();
 
-    // mountains
+    //fjell og sånt
     staticCtx.lineWidth = 3;
     const horizonY = -0.8;
     const mx = [-10, -6, -3, 0, 2, 5, 9];
@@ -98,10 +107,12 @@ function buildStaticScene() {
 
 resize();
 window.addEventListener("resize", resize);
+// sjekker alle taster for aktivitet :)
 let keys = {};
 window.addEventListener("keydown", e => keys[e.key] = true);
 window.addEventListener("keyup", e => keys[e.key] = false);
 
+// M muter
 window.addEventListener("keydown", e => {
     if (e.key === "m" || e.key === "M") {
         bgm.muted = !bgm.muted;
@@ -110,7 +121,7 @@ window.addEventListener("keydown", e => {
         hitSfx.muted = bgm.muted;
     }
 });
-
+// Lager bygninger som kommer mot spilleren
 function spawnObstacle() {
     let zone = Math.random();
     let xVal;
@@ -127,73 +138,70 @@ function spawnObstacle() {
         drift: (Math.random() - 0.5) * 0.01
     });
 }
-
-if (bgm.paused) {
-    bgm.play().catch(()=>{});
-    startSfx.play().catch(()=>{});
-}
-
+//Oppdaterer hver frame
 function update() {
-  if (gameOver) return;
-  if (invuln > 0) {
-      invuln -= 0.03;
-  }
-  if (isDead) {
+if (gameOver) return;
+if (invuln > 0) {
+    invuln -= 0.03;
+}
+if (isDead) {
     dT -= 0.03;
     if (dT <= 0) {
         isDead = false;
     }
-  }
-  score += 1;
-  let speed = 0.04;
+}
+// øker score hver frame, litt som en endless runner
+score += 1;
 
-  if (keys["ArrowLeft"])  { playerX -= speed; tilt = -0.3; }
-  if (keys["ArrowRight"]) { playerX += speed; tilt = 0.3;  }
+// Bruker piltastene for å sture skipet
+if (keys["ArrowLeft"])  { playerX -= speed; tilt = -0.3; }
+if (keys["ArrowRight"]) { playerX += speed; tilt = 0.3;  }
 
+// retter skipet opp hvis ingen input
+if (!keys["ArrowLeft"] && !keys["ArrowRight"]) {
+    tilt *= 0.8;
+}
+// holder spiller innenfor "bounds"
+if (playerX < -1.6) playerX = -1.6;
+if (playerX >  1.6) playerX = 1.6;
+if (playerY < -0.5) playerY = -0.5;
+if (playerY >  0.4) playerY = 0.4;
+// får det som å se ut som at bygningene går mot spiller, eller spiller går mot dem
+obstacles.forEach(o => {
+    o.z -= 0.04;
+    o.x += o.drift;
+});
 
-  if (!keys["ArrowLeft"] && !keys["ArrowRight"]) {
-      tilt *= 0.8;
-  }
-
-  if (playerX < -1.6) playerX = -1.6;
-  if (playerX >  1.6) playerX = 1.6;
-  if (playerY < -0.5) playerY = -0.5;
-  if (playerY >  0.4) playerY = 0.4;
-
-  obstacles.forEach(o => {
-      o.z -= 0.04;
-      o.x += o.drift;
-  });
-
-  obstacles = obstacles.filter(o => o.z > 0.3);
-
-  obstacles.forEach(o => {
+//sletter de som er passert
+obstacles = obstacles.filter(o => o.z > 0.3);
+// sjekker kollisjon, oppdaterer liv, lyd og sjekker om du har dæva
+obstacles.forEach(o => {
     if (o.z < 1.4 && o.z > 0.8) {
         if (invuln <= 0 && Math.abs(o.x - playerX) < o.size + 0.12 && playerY > 0.5 - o.height - 0.05) {
-           hitSfx.currentTime = 0;
-           hitSfx.play().catch(()=>{});
+        hitSfx.currentTime = 0;
+        hitSfx.play().catch(()=>{});
             lives--;
             isDead = true;
             invuln = 0.8;
             dT = 0.8;
             playerY = 0.1;
             if (lives <= 0) {
-               deathSfx.play().catch(()=>{});
-               gameOver = true;
+            deathSfx.play().catch(()=>{});
+            gameOver = true;
             }
         }
     }
-  });
-
-  spwnT -= 0.03;
-  if (spwnT <= 0) {
-      spawnObstacle();
-      spwnT = 0.6 + Math.random() * 1.2;
-  }
+});
+// litt random timer som lager bygninger
+spwnT -= 0.03;
+if (spwnT <= 0) {
+    spawnObstacle();
+    spwnT = 0.6 + Math.random() * 1.2;
+}
 }
 
 function drawGroundGrid() {}
-
+// tegner bygningen som en firkant i "3d"
 function drawObstacle(o) {
     let w = o.size;   
     let h = o.height; 
@@ -203,13 +211,13 @@ function drawObstacle(o) {
     line3D(o.x - w, 0.5, z, o.x - w, 0.5 - h, z);
     line3D(o.x + w, 0.5, z, o.x + w, 0.5 - h, z);
 }
-
 function drawShip() {
     let z = shipZ;
     let px = playerX;
     let py = playerY;
     let angle = tilt * 0.6;
 
+    // Roterer med tilt
     function rot(x, y) {
         return {
             x: px + (x * Math.cos(angle) - y * Math.sin(angle)),
@@ -217,6 +225,7 @@ function drawShip() {
         };
     }
 
+    // Lag punkter for skipet, tenk på det som en av de tegningene man kobler dott til dott
     let pts = {
         nose:    rot(0, -0.28),
         cockpit: rot(0, -0.14),
@@ -228,8 +237,10 @@ function drawShip() {
         wingR:   rot( 0.55, 0.06)
     };
 
+
     for (let k in pts) pts[k] = projShip(pts[k].x, pts[k].y, z);
 
+    // lager flyet
     ctx.beginPath();
     ctx.moveTo(pts.nose.x, pts.nose.y);
     ctx.lineTo(pts.bodyL.x, pts.bodyL.y);
@@ -243,60 +254,30 @@ function drawShip() {
     ctx.lineWidth = 3;
     ctx.stroke();
 
+    // lag vinger og misc
     ctx.beginPath();
     ctx.moveTo(pts.bodyL.x, pts.bodyL.y);
     ctx.lineTo(pts.wingL.x, pts.wingL.y);
     ctx.lineTo(pts.tailL.x, pts.tailL.y);
-    ctx.closePath();
-    ctx.fill();
 
-    ctx.beginPath();
     ctx.moveTo(pts.bodyR.x, pts.bodyR.y);
     ctx.lineTo(pts.wingR.x, pts.wingR.y);
     ctx.lineTo(pts.tailR.x, pts.tailR.y);
-    ctx.closePath();
-    ctx.fill();
-
-    ctx.beginPath();
-    ctx.moveTo(pts.bodyL.x, pts.bodyL.y);
-    ctx.lineTo(pts.wingL.x, pts.wingL.y);
-    ctx.lineTo(pts.tailL.x, pts.tailL.y);
-    ctx.closePath();
-    ctx.stroke();
-
-    ctx.beginPath();
-    ctx.moveTo(pts.bodyR.x, pts.bodyR.y);
-    ctx.lineTo(pts.wingR.x, pts.wingR.y);
-    ctx.lineTo(pts.tailR.x, pts.tailR.y);
-    ctx.closePath();
-    ctx.stroke();
-
-    function L(a, b) {
-        ctx.beginPath();
-        ctx.moveTo(a.x, a.y);
-        ctx.lineTo(b.x, b.y);
-        ctx.stroke();
-    }
-
-    L(pts.nose, pts.cockpit);
-    L(pts.cockpit, pts.bodyL);
-    L(pts.cockpit, pts.bodyR);
-    L(pts.bodyL, pts.tailL);
-    L(pts.bodyR, pts.tailR);
-    L(pts.tailL, pts.tailR);
-    L(pts.bodyL, pts.wingL);
-    L(pts.bodyR, pts.wingR);
+    ctx.stroke()
 }
 
+// lager fjell i bg
 function drawMountains() {}
 
+// lager en linje mellom 2 punkter på canvas
+//mest for bakgrunn og bakke
 function line3DTo(c, x1, y1, z1, x2, y2, z2) {
     const a = proj(x1, y1, z1);
     const b = proj(x2, y2, z2);
     c.moveTo(a.x, a.y);
     c.lineTo(b.x, b.y);
-}
-
+}   
+// faker 3d med matte. z er "dybde"
 function proj(x, y, z) {
     let f = 300;                
     let scale = f / z;        
@@ -305,6 +286,7 @@ function proj(x, y, z) {
         y: canvas.height / 1.38 + y * scale
     };
 }
+// får flyet inn i spillet
 function projShip(x, y, z) {
     const f = 300;
     const scale = f / z;
@@ -313,15 +295,16 @@ function projShip(x, y, z) {
         y: canvas.height * 0.80 + y * scale
     };
 }
+//tegner linje i 3d, lager den til 2d for canvas
 function line3D(x1, y1, z1, x2, y2, z2) {
-   let a = proj(x1, y1, z1);
+let a = proj(x1, y1, z1);
     let b = proj(x2, y2, z2);
     ctx.beginPath();
     ctx.moveTo(a.x, a.y);
     ctx.lineTo(b.x, b.y);
     ctx.stroke();
 }
-
+//tegner alt på skjermen og sjekker når spillet er over
 function render() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.textAlign = "left";

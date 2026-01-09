@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>REDSHIFT: CRYPT</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap');
+
+    body{
+        background-color: #000;
+    }
+
+#terminal {
+  background-color: #000;     
+  color: #00ff00;             
+  font-family: "JetBrains Mono", monospace;
+  font-optical-sizing: auto;
+  font-weight: 500;
+  font-style: normal;
+  padding: 10px;
+  line-height: 1.4;
+  width: 95vw;
+  max-width: 900px;
+  height: 90vh;
+  margin: 0 auto;
+  font-size: 1.1rem;
+  box-sizing: border-box;
+  overflow-y: auto;            
+  white-space: pre-wrap;       
+}
+  </style>
+</head>
+<body>
+<pre id="terminal" tabindex="0"></pre>
+  <script>
+const term = document.getElementById("terminal");
+let terminalText = "";
+let inputBuffer = "";
+let cursorOn = true;
+let gameState = "start";
+let coin = 0;
+let hp = 100;
+term.focus();
+
+
+setInterval(() => {
+    cursorOn = !cursorOn;
+    renderTerminal();
+}, 500);
+
+function renderTerminal() {
+    term.textContent =
+        terminalText +
+        "> " + inputBuffer +
+        (cursorOn ? "|" : " ");
+    term.scrollTop = term.scrollHeight;
+}
+
+
+window.addEventListener("keydown", (e) => {
+    e.preventDefault();
+    let key = e.key.toUpperCase(); 
+
+    if (key.length === 1) inputBuffer += key;
+    if (key === "BACKSPACE") inputBuffer = inputBuffer.slice(0, -1);
+
+    if (key === "ENTER") {
+        printLine("> " + inputBuffer);
+        handleCommand(inputBuffer.trim());
+        inputBuffer = "";
+    }
+
+    renderTerminal();
+});
+function printLine(line){
+    terminalText += line + ("\n");
+    renderTerminal();
+};
+function showScene() {
+    printLine(scenes[gameState].text);
+}
+const scenes = {
+    start: {
+        text: `Welcome to Ubuntu 24.04.3 LTS (GNU/Linux 6.14.0-33-generic x86_64 
+
+72 updates can be applied immediately.
+To see these additional updates run: apt list --upgradable
+
+19 additional security updates can be applied with ESM Apps.
+Learn more about enabling ESM Apps service at https://ubuntu.com/esm
+
+*** System restart required ***
+Last login: Fri Jan  2 00:35:04 2026 from ##########
+
+RUNNING redshift.service
+
+
+Welcome to THE CRYPT
+Do you want to ENTER?
+(YES/NO)`,
+        "YES": () => { 
+            printLine("You head down into the gate with the old wooden sign, reading THE CRYPT"); 
+            gameState = "crypt"; 
+            showScene();
+        },
+        "NO": () => { printLine("Your loss.");}
+            
+    },
+    crypt: {
+        text:`You find yourself in a real bad position. A guard just so happened to patrol by here while you were descending into the crypt.
+Just your luck, ain't it?
+Do you FIGHT the guard?
+(YES/NO)`,
+        "YES": () => { 
+            printLine(`You smack the guard across the face and ruin his makeup.
+What a progressive crypt, you think to yourself.
+He seems pissed tho`); 
+            gameState = "fightGuardCrypt"; 
+            showScene();
+        },
+        "NO": () => { printLine(`You back off safely before he notices you.
+You look around and find another door, presumably leading deeper into the CRYPT.
+You enter the door and dive deeper into the CRYPT.`); 
+            gameState = "crypt2";
+            showScene();
+        },
+            
+    },
+    fightGuardCrypt: {
+        text:`The guard seems mad, real mad. You might not make it out alive.
+You can try to fight, but who knows if he goes to the gym, he looks pretty strong, well, enough daydreaming
+Do you ATTACK the guard or RUN from the guard?`,
+        "ATTACK": () => { 
+            let outcome = Math.random() < 0.5 ? "slay" : "get_slain";
+            if (outcome === "slay") {
+                printLine(`You successfully slay the guard, now, where to hide the body?
+You dump him in a nearby dumpster and 5 coins fall out of his boxer
+YOU: "Dont mind if i do"
++5 COIN`)
+                coin += 5;
+                gameState = "crypt2";
+                showScene();
+
+            }
+            if (outcome === "get_slain") {
+                printLine("You don't slay the guard. He won, wow you are so good at video games, am i right? Go get yourself a medal for BEST GAMER OF THE YEAR")
+                gameState = "dead";
+                showScene();
+            }
+        },
+
+        "RUN": () => { 
+        let outcome = Math.random() < 0.5 ? "escape" : "die";
+
+        if (outcome === "escape") {
+            printLine(`You successfully escape from the guard, leaving him panting.
+Seems he needs to train cardio. Go Steve!
+You find 3 coins scattered on the floor`);
+            coin += 3;
+            gameState = "crypt2"
+        } else {
+            printLine(`While you are trying to run away, he grabs your arm with such force it untethers from your body, spraying crimson blood all over the crypt floor.
+Looks like Steve has to get cleaning duty again. Steve hates that. Best get to work.
+`);
+            gameState = "dead";
+            showScene();
+        }
+         }
+    },
+crypt2: {
+        text:`
+You successfully deal with the guard, being a optimistic adventurer with all their references from pop culture and media where adventuring is all fun and games, well well.
+The crypt door seems so alluring, you cant help but go down into the next level of the CRYPT.
+
+You find yourself in a deeper underground place, you notice because the air here smells like rotting plants and meat.
+Don't ask where the meat is from
+
+Standing before you is a goblin, holding a sign that says SHOP, pointing to the left.
+Talk to the goblin?
+(YES/NO)`,
+        "YES": () => {
+            gameState = "shopCrypt2"
+            showScene();
+        },
+
+        "NO": () => {
+            printLine(`GOB: Your loss. Betcha dont even have any coin dont you, little bitch boy
+You descend yet another level down the CRYPT`)
+            gameState = "crypt3corridor"
+            showScene();
+        }
+    
+    },
+shopCrypt2: {
+    text:`
+You approach the goblin and initiate a conversation.
+
+GOB: Hey there, human scum! You want some of that good stuff?
+The real good stuff
+We gobs got a shop, very nice, you'll like it
+come with meeee, please
+
+(YES/NO)`,
+        "YES": () => {
+            printLine(`After being led down a sketchy path from the goblin, you see a SHOP overrun by goblins, looks pretty trashed but the items look to be in mint condition
+GOB: Heya lil dude, u got gold?`);
+        if(coin > 0){
+            printLine(`Nice, little rich one we got here, you seem to have ${coin} coin`)
+            printLine(`Take a look!`)
+            gameState = "shopMenu2";
+            showScene();
+        }   else {
+            printLine(`Oh, so you are a lil broke one, huh. Get out of my sight, this isnt a charity case   
+            `)
+            printLine(`After being declined from the shop by the arrogant goblin, you return to the main CRYPT room and descend into the next layer`)
+            gameState = "crypt3corridor"
+            showScene();
+        }
+      },
+        "NO": () => {
+            printLine(`
+Wow, bet you dont have any coin broke boy, get out of my sight
+
+After being sent off by the arrogant goblin, you return to the main CRYPT room and descend into the next layer`);
+            gameState = "crypt3corridor";
+            showScene();
+        }
+},
+    shopMenu2: {
+        text: `
+The shop is filled with various potions, all of different values and effects
+        
+POTIONS:
+
+HEALTH 20HP - 10 COIN
+HEALTH 10HP - 3 COIN
+SUICIDE POTION - 999 HP - 1 COIN
+GAMBLERS DELIGHT - All chance elements increase in your favor by 10% - 100 COIN
+
+EXIT - 1 COIN
+
+Don't say we're scamming ya, you entered at your own will and should've read the fine print!`,
+
+
+
+        "EXIT": () => {
+        coin -= 1   
+        printLine(`${coin} COIN left`)
+        gameState = "crypt3corridor",
+        showScene()  
+        }
+    },
+    crypt3corridor: {
+        text: `
+
+After the encounter with the goblin, you put the thought in your head to kill the monsters to get more COIN, maybe more shops are present along the way?
+
+You continue to pass through the CRYPT you look up, finding a SPIDER!!! IT JUMPS DOWN ON YOUR FACE AND BITES YOUR NOSE!
+-3 HP 
+(OK)`,
+"OK": () => {
+    hp -= 3;
+    printLine(`Your current HP is ${hp}`);
+    gameState = "crypt3"; 
+    showScene();            
+}
+    
+    
+
+    },
+
+    crypt3: {
+        text: `
+After that horrid encounter, you shakingly walk to the next layer of the CRYPT.
+
+You find.. a city. A spider city. Spesifically the northern region, based on the sign, you figure out the city is called Sthorutweyt. Do you want to explore?
+(YES/NO)`,
+        "YES": () => {
+            printLine(`Walking through the city, you see shop after shop after shop run by human sized spiders, they walk on two legs... iffy.
+
+Suddenly, a giant tarantula stares at you and says something to you in spider? You weren't actually sure the language form they used down here.
+
+YOU: nervously say "Hi giant spider, do. you need anything"
+
+SPI: "sshshshssshshshshsihsihssshsihs
+
+Do you try to continiue the conversation?
+(YES/NO)`,
+        gameState = "spiderConvo",
+        showScene()
+)
+        },
+        "NO": () => {
+            printLine("Well, you are missing out but your choice");
+            gameState = "crypt4";
+            showScene();
+        },
+    },
+
+    crypt4: {
+        text:``
+    },
+
+    dead: {
+       text: `YOU DIED. Such misfortune.
+Press ENTER to restart.`,   
+    restart: true
+    }
+};
+
+if (hp < 0) {
+    gameState = "dead";
+    showScene();
+};
+
+showScene();
+
+function handleCommand(cmd) {
+    const scene = scenes[gameState] || {};
+
+    if (scene.restart) {
+        if (cmd === "") {
+            terminalText = "";
+            gameState = "start";
+            showScene();
+        }
+        return;
+    }
+
+    if (cmd === "") return; 
+
+    const commandKeys = Object.keys(scene).filter(k => k !== "text" && k !== "restart");
+    if (commandKeys.length === 0) return;
+    if (scene[cmd]) {
+        scene[cmd]();
+    } else {
+        printLine("Unknown command here: " + cmd);
+    }
+}
+
+  </script>
+</body>
+</html>
+

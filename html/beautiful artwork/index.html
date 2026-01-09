@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mitt 2D-spill</title>
+  <style>
+    body {
+        margin: 0;
+        background-color: #222;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+}
+
+
+canvas {
+        border: 2px solid #fff;
+        background-color: #000;
+}
+  </style>
+</head>
+<body>
+  <canvas id="gameCanvas" width="800" height="600"></canvas>
+ 
+  <script>
+    //La stå, dette gir deg tilgang til å kunne tegne på skjermen
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+
+// God plass å legge inn variabler
+
+
+// Logikk som skjer hvert "frame"
+    function update() {
+
+
+ 
+}
+//Her skal du legge inn grafikk
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height); // LA STÅ; Renser skjermen
+        
+        // Norgeflagga
+        const red = "#BA0C2F";
+        const white = "#FFFFFF";
+        const blue = "#00205B";
+        const flagX = 100;
+        const flagY = 100;
+        const flagWidth = 440;
+        const flagHeight = 280;
+        const scale = flagWidth / 22;
+
+        // bakgrunn
+        ctx.fillStyle = red;
+        ctx.fillRect(flagX, flagY, flagWidth, flagHeight);
+
+        // kors
+        ctx.fillStyle = white;
+        ctx.fillRect(flagX, flagY + 6*scale, flagWidth, 4*scale); // horizontal
+        ctx.fillRect(flagX + 6*scale, flagY, 4*scale, flagHeight); // vertical
+
+        // blå kross
+        ctx.fillStyle = blue;
+        ctx.fillRect(flagX, flagY + 7*scale, flagWidth, 2*scale); // horizontal
+        ctx.fillRect(flagX + 7*scale, flagY, 2*scale, flagHeight); // vertical
+}
+
+
+//For at spillet skal oppdatere og tegne seg selv kontinuerlig, trenger mest sannsynlig ikke å forandres på
+    function gameLoop() {
+        update();  // Spill-logikk
+        draw();    // Tegn på skjermen
+        requestAnimationFrame(gameLoop); // Kjør på nytt
+}
+//starter spillet
+gameLoop();
+  </script>
+</body>
+</html>
+
+

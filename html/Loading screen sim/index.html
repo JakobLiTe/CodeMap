@@ -430,7 +430,6 @@ Press any key to continue...
         const output = terminal.output;
         let text = output.textContent;
         
-        // Remove cursor from current line
         text = text.replace(/█$/, '');
         
         if (terminal.loginState === 'login') {
@@ -539,7 +538,6 @@ Press any key to continue...
     const toggleTransparency = () => {};
     const executeCommand = () => {};
 
-    // Window dragging
     let draggedWindow = null;
     let offsetX = 0;
     let offsetY = 0;
@@ -572,10 +570,8 @@ Press any key to continue...
         }, 7000);
     };
 
-    // ES6 event listener, fixes broken button
     startBtn.addEventListener('click', enterLoading);
 
-    // GRUB keyboard navigation
     let selectedOS = 0;
     const osOptions = ['ubuntu', 'windows', 'arch', 'macos'];
     
@@ -583,7 +579,6 @@ Press any key to continue...
         const grub = document.getElementById("grub-screen");
         const macos = document.getElementById("macos-error");
         
-        // ESC returns from macOS error
         if (e.key === 'Escape' && macos.style.display === "flex") {
             macos.style.display = "none";
             grub.classList.add("active");
