@@ -76,7 +76,7 @@ window.addEventListener("keydown", (e) => {
 function printLine(line){
     terminalText += line + ("\n");
     renderTerminal();
-};
+}
 function showScene() {
     printLine(scenes[gameState].text);
 }
@@ -247,7 +247,7 @@ Don't say we're scamming ya, you entered at your own will and should've read the
         "EXIT": () => {
         coin -= 1   
         printLine(`${coin} COIN left`)
-        gameState = "crypt3corridor",
+        gameState = "crypt3corridor"
         showScene()  
         }
     },
@@ -286,10 +286,9 @@ YOU: nervously say "Hi giant spider, do. you need anything"
 SPI: "sshshshssshshshshsihsihssshsihs
 
 Do you try to continiue the conversation?
-(YES/NO)`,
-        gameState = "spiderConvo",
-        showScene()
-)
+(YES/NO)`);
+            gameState = "spiderConvo";
+            showScene();
         },
         "NO": () => {
             printLine("Well, you are missing out but your choice");
@@ -312,7 +311,7 @@ Press ENTER to restart.`,
 if (hp < 0) {
     gameState = "dead";
     showScene();
-};
+}
 
 showScene();
 
