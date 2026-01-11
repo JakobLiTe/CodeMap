@@ -24,6 +24,9 @@ More projects will most likely be added as i learn and stuff.
 - **LOADING SCREEN SIMULATOR (Yes, really):**  
   https://jakoblite.github.io/CodeMap/html/Loading%20screen%20sim/index.html
 
+- **Work in progress small textbased game:**  
+  https://jakoblite.github.io/CodeMap/html/ihavetogetbetterandtrainformyfinals/1/index.html
+
 - **Godot Testing**
   Trying to make a project in godot, will update when i get motivation or anything
   I don't got motivation
@@ -34,6 +37,7 @@ More projects will most likely be added as i learn and stuff.
 
 ### ✦ Skills
 <p align="center">
+a little of each =)
   <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/html5/html5-original.svg" width="55px" />
   <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/css3/css3-original.svg" width="55px" />
   <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/javascript/javascript-original.svg" width="55px" />
