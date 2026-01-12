@@ -34,55 +34,99 @@
 <body>
 <pre id="terminal" tabindex="0"></pre>
   <script>
-const term = document.getElementById("terminal");
-let terminalText = "";
-let inputBuffer = "";
-let cursorOn = true;
-let gameState = "start";
-let coin = 0;
-let hp = 100;
-term.focus();
+    // --- Global Game State and Configuration ---
+    const term = document.getElementById("terminal");
+    let terminalText = ""; // Accumulates the text displayed in the terminal
+    let inputBuffer = "";  // Stores the currently typed command
+    let cursorOn = true;   // Toggles for the blinking cursor effect
+    let gameState = "start"; // Current scene identifier
+    let coin = 0;          // Player's currency
+    let hp = 100;          // Player's health points
+    window.hasBlade = false; // Flag for Demon Blade powerup
+    term.focus();
 
+    /**
+     * Blinking cursor interval.
+     * Toggles the cursor visibility every 500ms and redraws the terminal.
+     */
+    setInterval(() => {
+        cursorOn = !cursorOn;
+        renderTerminal();
+    }, 500);
 
-setInterval(() => {
-    cursorOn = !cursorOn;
-    renderTerminal();
-}, 500);
-
-function renderTerminal() {
-    term.textContent =
-        terminalText +
-        "> " + inputBuffer +
-        (cursorOn ? "|" : " ");
-    term.scrollTop = term.scrollHeight;
-}
-
-
-window.addEventListener("keydown", (e) => {
-    e.preventDefault();
-    let key = e.key.toUpperCase(); 
-
-    if (key.length === 1) inputBuffer += key;
-    if (key === "BACKSPACE") inputBuffer = inputBuffer.slice(0, -1);
-
-    if (key === "ENTER") {
-        printLine("> " + inputBuffer);
-        handleCommand(inputBuffer.trim());
-        inputBuffer = "";
+    /**
+     * Renders the current state of the terminal to the screen.
+     * Combines the history (terminalText), current prompt, and cursor.
+     */
+    function renderTerminal() {
+        term.textContent =
+            terminalText +
+            "> " + inputBuffer +
+            (cursorOn ? "|" : " ");
+        // Auto-scroll to the bottom of the terminal
+        term.scrollTop = term.scrollHeight;
     }
 
-    renderTerminal();
-});
-function printLine(line){
-    terminalText += line + ("\n");
-    renderTerminal();
-}
-function showScene() {
-    printLine(scenes[gameState].text);
-}
-const scenes = {
+    /**
+     * Global keydown listener to handle user input.
+     * Prevents default browser behavior and updates the input buffer.
+     */
+    window.addEventListener("keydown", (e) => {
+        e.preventDefault();
+        let key = e.key.toUpperCase(); 
+
+        // Add character keys to the buffer
+        if (key.length === 1) inputBuffer += key;
+        
+        // Handle backspace
+        if (key === "BACKSPACE") inputBuffer = inputBuffer.slice(0, -1);
+
+        // Process command on Enter
+        if (key === "ENTER") {
+            printLine("> " + inputBuffer);
+            handleCommand(inputBuffer.trim());
+            inputBuffer = "";
+        }
+
+        renderTerminal();
+    });
+
+    /**
+     * Appends a line of text to the terminal history.
+     * @param {string} line - The text to print.
+     */
+    function printLine(line){
+        terminalText += line + ("\n");
+        renderTerminal();
+    }
+
+    /**
+     * Displays the text for the current game state.
+     */
+    function showScene() {
+        let text = scenes[gameState].text;
+        // Evaluate template literals if they are functions or contain dynamic content
+        if (typeof text === 'function') {
+            printLine(text());
+        } else {
+            // Basic dynamic replacement for common variables
+            let processedText = text
+                .replace(/\${hp}/g, hp)
+                .replace(/\${coin}/g, coin);
+            printLine(processedText);
+        }
+    }
+
+    /**
+     * Game Scenes Data Structure.
+     * Each key represents a game state (e.g., 'start', 'crypt').
+     * 'text': The story/prompt text for that scene.
+     * Other keys (e.g., 'YES', 'NO'): Command handlers for user input.
+     * 'restart': If true, any input restarts the game.
+     */
+    const scenes = {
     start: {
-        text: `Welcome to Ubuntu 24.04.3 LTS (GNU/Linux 6.14.0-33-generic x86_64 
+        text: () => `Welcome to Ubuntu 24.04.3 LTS (GNU/Linux 6.14.0-33-generic x86_64 
 
 72 updates can be applied immediately.
 To see these additional updates run: apt list --upgradable
@@ -97,6 +141,9 @@ RUNNING redshift.service
 
 
 Welcome to THE CRYPT
+
+Current Stats: ${hp} HP | ${coin} COIN
+
 Do you want to ENTER?
 (YES/NO)`,
         "YES": () => { 
@@ -108,8 +155,11 @@ Do you want to ENTER?
             
     },
     crypt: {
-        text:`You find yourself in a real bad position. A guard just so happened to patrol by here while you were descending into the crypt.
+        text: () => `You find yourself in a real bad position. A guard just so happened to patrol by here while you were descending into the crypt.
 Just your luck, ain't it?
+
+Current Stats: ${hp} HP | ${coin} COIN
+
 Do you FIGHT the guard?
 (YES/NO)`,
         "YES": () => { 
@@ -125,18 +175,25 @@ You enter the door and dive deeper into the CRYPT.`);
             gameState = "crypt2";
             showScene();
         },
+        "FIGHT": () => {
+            scenes.crypt.YES();
+        }
             
     },
     fightGuardCrypt: {
-        text:`The guard seems mad, real mad. You might not make it out alive.
-You can try to fight, but who knows if he goes to the gym, he looks pretty strong, well, enough daydreaming
-Do you ATTACK the guard or RUN from the guard?`,
+        text: () => `The guard seems mad, real mad. You might not make it out alive.
+You can try to fight, but who knows if he goes to the gym, he looks pretty strong, well, enough daydreaming.
+
+Current Stats: ${hp} HP | ${coin} COIN
+
+Do you ATTACK the guard or RUN from the guard?
+(ATTACK/RUN)`,
         "ATTACK": () => { 
             let outcome = Math.random() < 0.5 ? "slay" : "get_slain";
             if (outcome === "slay") {
                 printLine(`You successfully slay the guard, now, where to hide the body?
-You dump him in a nearby dumpster and 5 coins fall out of his boxer
-YOU: "Dont mind if i do"
+You dump him in a nearby dumpster and 5 coins fall out of his boxers.
+YOU: "Don't mind if I do."
 +5 COIN`)
                 coin += 5;
                 gameState = "crypt2";
@@ -144,7 +201,7 @@ YOU: "Dont mind if i do"
 
             }
             if (outcome === "get_slain") {
-                printLine("You don't slay the guard. He won, wow you are so good at video games, am i right? Go get yourself a medal for BEST GAMER OF THE YEAR")
+                printLine("You don't slay the guard. He won. Wow, you are so good at video games, am I right? Go get yourself a medal for BEST GAMER OF THE YEAR!")
                 gameState = "dead";
                 showScene();
             }
@@ -156,9 +213,11 @@ YOU: "Dont mind if i do"
         if (outcome === "escape") {
             printLine(`You successfully escape from the guard, leaving him panting.
 Seems he needs to train cardio. Go Steve!
-You find 3 coins scattered on the floor`);
+You find 3 coins scattered on the floor.
+`);
             coin += 3;
             gameState = "crypt2"
+            showScene();
         } else {
             printLine(`While you are trying to run away, he grabs your arm with such force it untethers from your body, spraying crimson blood all over the crypt floor.
 Looks like Steve has to get cleaning duty again. Steve hates that. Best get to work.
@@ -166,174 +225,660 @@ Looks like Steve has to get cleaning duty again. Steve hates that. Best get to w
             gameState = "dead";
             showScene();
         }
-         }
+         },
+        "FIGHT": () => {
+            scenes.fightGuardCrypt.ATTACK();
+        },
+        "YES": () => {
+            scenes.fightGuardCrypt.ATTACK();
+        }
     },
-crypt2: {
-        text:`
-You successfully deal with the guard, being a optimistic adventurer with all their references from pop culture and media where adventuring is all fun and games, well well.
-The crypt door seems so alluring, you cant help but go down into the next level of the CRYPT.
+    crypt2: {
+        text: () => `
+You successfully deal with the guard, being an optimistic adventurer with all their references from pop culture and media where adventuring is all fun and games, well well.
+The crypt door seems so alluring, you can't help but go down into the next level of the CRYPT.
+
+Current Stats: ${hp} HP | ${coin} COIN
 
 You find yourself in a deeper underground place, you notice because the air here smells like rotting plants and meat.
-Don't ask where the meat is from
+Don't ask where the meat is from.
 
-Standing before you is a goblin, holding a sign that says SHOP, pointing to the left.
-Talk to the goblin?
-(YES/NO)`,
+Standing before you is a goblin, holding a sign that says SHOP, pointing to the left. 
+To the right, there is a dark, echoing corridor that smells of sulfur.
+Talk to the goblin, or go check the dark corridor?
+(YES/NO/CAVE)`,
         "YES": () => {
             gameState = "shopCrypt2"
             showScene();
         },
-
+        "GOB": () => {
+            gameState = "shopCrypt2"
+            showScene();
+        },
+        "CAVE": () => {
+            gameState = "enemyCave";
+            showScene();
+        },
         "NO": () => {
-            printLine(`GOB: Your loss. Betcha dont even have any coin dont you, little bitch boy
-You descend yet another level down the CRYPT`)
-            gameState = "crypt3corridor"
+            printLine(`GOB: Your loss. Betcha don't even have any coin do you, little bitch boy?
+You descend yet another level down the CRYPT.`);
+            gameState = "crypt3corridor";
             showScene();
         }
     
     },
+    enemyCave: {
+        text: () => `The dark corridor leads into an ENEMY FILLED CAVE. It is damp and filled with the sounds of scurrying creatures. 
+You can feel eyes watching you from the shadows. This seems like a good place to find some COIN, if you're willing to risk your life.
+
+Current Stats: ${hp} HP | ${coin} COIN
+
+Do you look for TROUBLE, or go BACK to the main path?
+(TROUBLE/BACK)`,
+        "TROUBLE": () => {
+            let enemy = ["GHOUL", "SKELETON", "ZOMBIE"][Math.floor(Math.random() * 3)];
+            printLine(`A wild ${enemy} appears! It looks hungry.`);
+            gameState = "battle";
+            window.currentEnemy = enemy;
+            showScene();
+        },
+        "BACK": () => {
+            gameState = "crypt2";
+            showScene();
+        }
+    },
+    battle: {
+        text: () => `You are facing an enemy! What do you do?
+        
+Current Stats: ${hp} HP | ${coin} COIN
+${window.hasBlade ? "(You are wielding the DEMON BLADE)" : ""}
+
+(FIGHT/RUN)`,
+        "FIGHT": () => {
+            let winChance = window.hasBlade ? 0.9 : 0.7;
+            let win = Math.random() < winChance;
+            if (win) {
+                let reward = Math.floor(Math.random() * 5) + 2;
+                coin += reward;
+                printLine(`You defeated the ${window.currentEnemy}! You found ${reward} COIN.`);
+                printLine(`+${reward} COIN. Total COIN: ${coin}`);
+                gameState = "enemyCave";
+            } else {
+                let damage = Math.floor(Math.random() * 20) + 10;
+                hp -= damage;
+                printLine(`The ${window.currentEnemy} hits you hard! You lose ${damage} HP.`);
+                printLine(`Current HP: ${hp}`);
+                if (hp <= 0) {
+                    gameState = "dead";
+                } else {
+                    gameState = "battle";
+                }
+            }
+            showScene();
+        },
+        "RUN": () => {
+            printLine("You manage to scramble away back to the corridor.");
+            gameState = "enemyCave";
+            showScene();
+        }
+    },
 shopCrypt2: {
-    text:`
+    text: () => `
 You approach the goblin and initiate a conversation.
 
+Current Stats: ${hp} HP | ${coin} COIN
+
 GOB: Hey there, human scum! You want some of that good stuff?
-The real good stuff
-We gobs got a shop, very nice, you'll like it
-come with meeee, please
+The real good stuff.
+We gobs got a shop, very nice, you'll like it.
+Come with meeee, please.
 
 (YES/NO)`,
         "YES": () => {
-            printLine(`After being led down a sketchy path from the goblin, you see a SHOP overrun by goblins, looks pretty trashed but the items look to be in mint condition
+            printLine(`After being led down a sketchy path by the goblin, you see a SHOP overrun by goblins, looks pretty trashed but the items look to be in mint condition.
 GOB: Heya lil dude, u got gold?`);
         if(coin > 0){
-            printLine(`Nice, little rich one we got here, you seem to have ${coin} coin`)
+            printLine(`Nice, little rich one we got here, you seem to have ${coin} coin.`)
             printLine(`Take a look!`)
             gameState = "shopMenu2";
             showScene();
         }   else {
-            printLine(`Oh, so you are a lil broke one, huh. Get out of my sight, this isnt a charity case   
-            `)
-            printLine(`After being declined from the shop by the arrogant goblin, you return to the main CRYPT room and descend into the next layer`)
-            gameState = "crypt3corridor"
+            hp -= 50;
+            printLine(`Oh, so you are a lil broke one, huh. We don't like tourists!`)
+            printLine(`The goblin punches you in the gut and steals some of your life force instead!
+-50 HP. You now have ${hp} HP.`)
+            printLine(`After being bullied by the arrogant goblin, you limp back to the main CRYPT room and descend into the next layer.`)
+            if (hp <= 0) {
+                gameState = "dead";
+            } else {
+                gameState = "crypt3corridor";
+            }
             showScene();
         }
       },
         "NO": () => {
             printLine(`
-Wow, bet you dont have any coin broke boy, get out of my sight
+Wow, bet you don't have any coin broke boy, get out of my sight!
 
-After being sent off by the arrogant goblin, you return to the main CRYPT room and descend into the next layer`);
+After being sent off by the arrogant goblin, you return to the main CRYPT room and descend into the next layer.`);
             gameState = "crypt3corridor";
             showScene();
         }
 },
     shopMenu2: {
-        text: `
+        text: () => `
 The shop is filled with various potions, all of different values and effects
+
+Current Stats: ${hp} HP | ${coin} COIN
         
 POTIONS:
 
 HEALTH 20HP - 10 COIN
 HEALTH 10HP - 3 COIN
-SUICIDE POTION - 999 HP - 1 COIN
+SUICIDE POTION - 999 DAMAGE - 1 COIN
 GAMBLERS DELIGHT - All chance elements increase in your favor by 10% - 100 COIN
 
 EXIT - 1 COIN
 
-Don't say we're scamming ya, you entered at your own will and should've read the fine print!`,
+Don't say we're scamming ya, you entered at your own will and should've read the fine print!
+(HEALTH 20HP/HEALTH 10HP/SUICIDE POTION/GAMBLERS DELIGHT/EXIT)`,
 
-
-
+        "HEALTH 20HP": () => {
+            if (coin >= 10) {
+                coin -= 10;
+                hp += 20;
+                printLine(`Purchased HEALTH 20HP. You now have ${hp} HP and ${coin} COIN.`);
+            } else {
+                printLine("You don't have enough COIN for that.");
+            }
+            showScene();
+        },
+        "HEALTH 10HP": () => {
+            if (coin >= 3) {
+                coin -= 3;
+                hp += 10;
+                printLine(`Purchased HEALTH 10HP. You now have ${hp} HP and ${coin} COIN.`);
+            } else {
+                printLine("You don't have enough COIN for that.");
+            }
+            showScene();
+        },
+        "SUICIDE POTION": () => {
+            if (coin >= 1) {
+                coin -= 1;
+                hp -= 999;
+                printLine(`You drank the SUICIDE POTION. I bet you listen to My Chemical Romance and thought it was" +
+funny huh? No, actually no. Think of your poor character`);
+                if (hp <= 0) {
+                    gameState = "dead";
+                }
+            } else {
+                printLine("You are so broke you can't even afford to end it all. Loser");
+            }
+            showScene();
+        },
+        "GAMBLERS DELIGHT": () => {
+            if (coin >= 100) {
+                coin -= 100;
+                printLine("You purchased GAMBLERS DELIGHT. (Note: Logic not yet implemented, but you feel luckier!)");
+            } else {
+                printLine("You need 100 COIN for this. Go slay some enemies.");
+            }
+            showScene();
+        },
         "EXIT": () => {
-        coin -= 1   
-        printLine(`${coin} COIN left`)
-        gameState = "crypt3corridor"
-        showScene()  
+            if (coin >= 1) {
+                coin -= 1;
+                printLine(`You paid 1 COIN to exit the shop. ${coin} COIN left.`);
+                gameState = "crypt3corridor";
+                showScene();
+            } else {
+                hp -= 50;
+                printLine("The goblin blocks the exit. 'Pay the toll, boy! No coin? Then I'll take it in blood!'");
+                printLine(`He slashes you as you force your way out. -50 HP. You now have ${hp} HP.`);
+                if (hp <= 0) {
+                    gameState = "dead";
+                } else {
+                    gameState = "crypt3corridor";
+                }
+                showScene();
+            }
         }
     },
     crypt3corridor: {
-        text: `
+        text: () => `
 
-After the encounter with the goblin, you put the thought in your head to kill the monsters to get more COIN, maybe more shops are present along the way?
+After the encounter with the goblin, you continue your descent. The air grows thick and humid, filled with the smell of old silk and damp earth.
 
-You continue to pass through the CRYPT you look up, finding a SPIDER!!! IT JUMPS DOWN ON YOUR FACE AND BITES YOUR NOSE!
+Current Stats: ${hp} HP | ${coin} COIN
+
+Suddenly, a SPIDER JUMPS DOWN ON YOUR FACE AND BITES YOUR NOSE!
 -3 HP 
 (OK)`,
 "OK": () => {
     hp -= 3;
-    printLine(`Your current HP is ${hp}`);
-    gameState = "crypt3"; 
+    printLine(`Your current HP is ${hp}.`);
+    if (hp <= 0) {
+        gameState = "dead";
+    } else {
+        gameState = "spiderCityEntrance"; 
+    }
     showScene();            
+},
+"YES": () => {
+    scenes.crypt3corridor.OK();
 }
     
     
-
     },
 
-    crypt3: {
-        text: `
+    spiderCityEntrance: {
+        text: () => `
 After that horrid encounter, you shakingly walk to the next layer of the CRYPT.
 
-You find.. a city. A spider city. Spesifically the northern region, based on the sign, you figure out the city is called Sthorutweyt. Do you want to explore?
+Current Stats: ${hp} HP | ${coin} COIN
+
+You find... a city. A spider city. Sthorutweyt, according to a sign written in messy webbing. 
+The city of spiders stretches out before you, glowing with eerie bioluminescent fungus.
+
+Do you want to ENTER the city?
 (YES/NO)`,
         "YES": () => {
-            printLine(`Walking through the city, you see shop after shop after shop run by human sized spiders, they walk on two legs... iffy.
-
-Suddenly, a giant tarantula stares at you and says something to you in spider? You weren't actually sure the language form they used down here.
-
-YOU: nervously say "Hi giant spider, do. you need anything"
-
-SPI: "sshshshssshshshshsihsihssshsihs
-
-Do you try to continiue the conversation?
-(YES/NO)`);
-            gameState = "spiderConvo";
+            printLine(`You step through the massive silk-draped gates of Sthorutweyt.`);
+            gameState = "spiderPlaza";
             showScene();
         },
         "NO": () => {
-            printLine("Well, you are missing out but your choice");
-            gameState = "crypt4";
+            printLine("You decide to skirt the city's edge, but a silk wall blocks your path. You must enter to find the way down.");
+            gameState = "spiderPlaza";
             showScene();
         },
     },
 
+    spiderPlaza: {
+        text: () => `
+You are in the CENTRAL PLAZA of Sthorutweyt. 
+Spiders of all sizes scuttle about their business. Some walk on eight legs, others on two, wearing tiny hats.
+It's surprisingly organized.
+
+Current Stats: ${hp} HP | ${coin} COIN
+
+Where do you want to go?
+- MARKET (Check out the local goods)
+- ARENA (Watch or join a fight)
+- RESIDENTIAL (Explore the webbed houses)
+- GATE (Head deeper into the crypt)
+
+(MARKET/ARENA/RESIDENTIAL/GATE)`,
+        "MARKET": () => {
+            gameState = "spiderMarket";
+            showScene();
+        },
+        "ARENA": () => {
+            gameState = "spiderArena";
+            showScene();
+        },
+        "RESIDENTIAL": () => {
+            gameState = "spiderResidential";
+            showScene();
+        },
+        "GATE": () => {
+            printLine("You head towards the heavy silk-bound gate at the far end of the plaza.");
+            gameState = "crypt4";
+            showScene();
+        }
+    },
+
+    spiderMarket: {
+        text: () => `
+The MARKET is bustling with arachnid merchants. 
+One spider is selling "Vintage Flies," another is offering "Silk-woven capes."
+A particularly large Tarantula merchant beckons you over.
+
+(TALK/BACK)`,
+        "TALK": () => {
+            gameState = "spiderConvo";
+            showScene();
+        },
+        "BACK": () => {
+            gameState = "spiderPlaza";
+            showScene();
+        }
+    },
+
+    spiderResidential: {
+        text: () => `
+The RESIDENTIAL district is a maze of hanging cocoons and web-bridges.
+It's quiet here, perhaps too quiet. You see a shimmering object caught in a corner web.
+
+Current Stats: ${hp} HP | ${coin} COIN
+
+(SEARCH/BACK)`,
+        "SEARCH": () => {
+            let outcome = Math.random();
+            if (outcome < 0.4) {
+                let found = Math.floor(Math.random() * 8) + 2;
+                coin += found;
+                printLine(`You found ${found} COIN hidden in an old cocoon!`);
+            } else if (outcome < 0.7) {
+                hp -= 10;
+                printLine(`A trap! A tiny mechanical spider bites you. -10 HP.`);
+                if (hp <= 0) {
+                    gameState = "dead";
+                }
+            } else {
+                printLine(`You find nothing but sticky webbing and the feeling of being watched.`);
+            }
+            showScene();
+        },
+        "BACK": () => {
+            gameState = "spiderPlaza";
+            showScene();
+        }
+    },
+
+    spiderConvo: {
+        text: () => `The Tarantula merchant looks at you with its many eyes. It seems to be waiting for a response.
+
+Current Stats: ${hp} HP | ${coin} COIN
+        
+(YES/NO)`,
+        "YES": () => {
+            printLine(`YOU: "I... I don't understand you, but I come in peace?"
+            
+The spider tilts its head, then suddenly hands you a small, silk-wrapped package and points toward the plaza.
++10 COIN (found inside the package!)`);
+            coin += 10;
+            gameState = "spiderPlaza";
+            showScene();
+        },
+        "NO": () => {
+            printLine(`You slowly back away from the merchant. It doesn't seem to care and goes back to polishing its silk.`);
+            gameState = "spiderPlaza";
+            showScene();
+        }
+    },
+    spiderArena: {
+        text: () => `The ARENA is a pit of sand. A giant scorpion enters the other side.
+        
+Current Stats: ${hp} HP | ${coin} COIN
+${window.hasBlade ? "(You are wielding the DEMON BLADE)" : ""}
+
+Do you FIGHT for coins, or LEAVE?
+(FIGHT/LEAVE)`,
+        "FIGHT": () => {
+            let winChance = window.hasBlade ? 0.8 : 0.6;
+            let win = Math.random() < winChance;
+            if (win) {
+                let reward = Math.floor(Math.random() * 15) + 5;
+                coin += reward;
+                printLine(`You defeated the scorpion! The crowd throws ${reward} COIN at you.`);
+                gameState = "spiderArena";
+            } else {
+                let damage = Math.floor(Math.random() * 30) + 10;
+                hp -= damage;
+                printLine(`The scorpion stings you! You lose ${damage} HP.`);
+                if (hp <= 0) {
+                    gameState = "dead";
+                } else {
+                    gameState = "spiderArena";
+                }
+            }
+            showScene();
+        },
+        "LEAVE": () => {
+            printLine("You leave the arena and return to the plaza.");
+            gameState = "spiderPlaza";
+            showScene();
+        }
+    },
+
     crypt4: {
-        text:``
+        text: () => `You have reached what seems to be the deepest part of THE CRYPT. 
+The air is thick with ancient magic. Before you stands a massive obsidian throne.
+Behind the throne, you notice a shimmering portal leading to THE UNDERWORLD.
+
+Current Stats: ${hp} HP | ${coin} COIN
+
+Do you SIT on the throne, or ENTER the portal?
+(SIT/PORTAL)`,
+        "SIT": () => {
+            printLine("As you sit on the throne, you feel a surge of power! You are now the King of the Crypt!");
+            printLine("However, the portal behind you begins to pull you in with an irresistible force...");
+            gameState = "underworldEntrance";
+            showScene();
+        },
+        "PORTAL": () => {
+            printLine("You decide to leave the throne behind and venture into the unknown depths of THE UNDERWORLD.");
+            gameState = "underworldEntrance";
+            showScene();
+        },
+        "YES": () => {
+            scenes.crypt4.SIT();
+        },
+        "NO": () => {
+            scenes.crypt4.PORTAL();
+        }
+    },
+
+    underworldEntrance: {
+        text: () => `
+You have emerged in THE UNDERWORLD. The sky is a bruised purple, and the air smells of ozone and sulfur.
+The ground beneath your feet is obsidian, warm to the touch.
+
+Current Stats: ${hp} HP | ${coin} COIN
+
+To your left, a massive LAVA LAKE glows brightly. 
+To your right, a dark CATHEDRAL looms over the landscape.
+Directly ahead, a PATH leads further into the crimson wastes.
+
+(LAVA/CATHEDRAL/PATH)`,
+        "LAVA": () => {
+            gameState = "lavaLake";
+            showScene();
+        },
+        "CATHEDRAL": () => {
+            gameState = "cathedral";
+            showScene();
+        },
+        "PATH": () => {
+            gameState = "underworldPath";
+            showScene();
+        },
+        "LEFT": () => {
+            scenes.underworldEntrance.LAVA();
+        },
+        "RIGHT": () => {
+            scenes.underworldEntrance.CATHEDRAL();
+        },
+        "AHEAD": () => {
+            scenes.underworldEntrance.PATH();
+        }
+    },
+
+    lavaLake: {
+        text: () => `
+The LAVA LAKE is a spectacle of heat and light. Bubbles of molten rock pop with a low rumble.
+You see a small island in the middle with a golden chest.
+
+Current Stats: ${hp} HP | ${coin} COIN
+
+(SWIM/BACK)`,
+        "SWIM": () => {
+            printLine("You try to swim in lava? Really? You're not a fire elemental.");
+            hp -= 100;
+            if (hp <= 0) {
+                gameState = "dead";
+            }
+            showScene();
+        },
+        "BACK": () => {
+            gameState = "underworldEntrance";
+            showScene();
+        }
+    },
+
+    cathedral: {
+        text: () => `
+The CATHEDRAL is silent and cold. Tall, stained-glass windows show scenes of ancient battles.
+At the altar, a hooded figure stands, seemingly waiting.
+
+Current Stats: ${hp} HP | ${coin} COIN
+
+(TALK/BACK)`,
+        "TALK": () => {
+            gameState = "demonShop";
+            showScene();
+        },
+        "BACK": () => {
+            gameState = "underworldEntrance";
+            showScene();
+        }
+    },
+
+    demonShop: {
+        text: () => `
+The hooded figure reveals itself to be a DEMON MERCHANT.
+DEMON: "Greetings, traveler. Not many make it this far. Want to trade?"
+
+Current Stats: ${hp} HP | ${coin} COIN
+
+ITEMS:
+SOUL POTION (+50 HP) - 25 COIN
+DEMON BLADE (Logic not implemented) - 50 COIN
+BACK - (Return to cathedral)
+
+(SOUL/BLADE/BACK)`,
+        "SOUL": () => {
+            if (coin >= 25) {
+                coin -= 25;
+                hp += 50;
+                printLine(`Purchased SOUL POTION. You now have ${hp} HP.`);
+            } else {
+                printLine("DEMON: 'No coin, no soul.'");
+            }
+            showScene();
+        },
+        "BLADE": () => {
+            if (coin >= 50) {
+                coin -= 50;
+                window.hasBlade = true;
+                printLine("You purchased the DEMON BLADE. You feel much stronger!");
+            } else {
+                printLine("DEMON: 'Come back when you're richer.'");
+            }
+            showScene();
+        },
+        "BACK": () => {
+            gameState = "cathedral";
+            showScene();
+        },
+        "POTION": () => {
+            scenes.demonShop.SOUL();
+        }
+    },
+
+    underworldPath: {
+        text: () => `
+The path stretches endlessly into the crimson distance. 
+The journey seems far from over, but your legend is just beginning.
+
+Current Stats: ${hp} HP | ${coin} COIN
+
+(CONTINUE/BACK)`,
+        "CONTINUE": () => {
+            printLine("You walk for what feels like days. The environment changes, but the adventure continues...");
+            // For now, let's loop or add a "to be continued" feel without ending
+            gameState = "underworldEntrance";
+            showScene();
+        },
+        "BACK": () => {
+            gameState = "underworldEntrance";
+            showScene();
+        }
+    },
+
+    win: {
+        text: () => `GAME OVER - YOU WON!
+Total Coins: ${coin}
+Final HP: ${hp}
+
+Type RESTART or press ENTER to play again.`,
+        restart: true,
+        "RESTART": () => {}
     },
 
     dead: {
-       text: `YOU DIED. Such misfortune.
-Press ENTER to restart.`,   
-    restart: true
+       text: () => `YOU DIED. Such misfortune.
+Total Coins: ${coin}
+Final HP: ${hp}
+
+Type RESTART or press ENTER to try again.`,   
+    restart: true,
+    "RESTART": () => {
+        // Handled by restart logic in handleCommand
+    }
     }
 };
 
+/**
+ * Resets the game state to initial values.
+ */
+function restartGame() {
+    terminalText = "";
+    gameState = "start";
+    coin = 0;
+    hp = 100;
+    window.hasBlade = false;
+    showScene();
+}
+
+// --- Game Execution ---
+
+// Basic death check (triggered on load if HP is low)
 if (hp < 0) {
     gameState = "dead";
     showScene();
 }
 
+// Initial scene display
 showScene();
 
+/**
+ * Handles the logic for a user-submitted command.
+ * Matches the command against available options in the current scene.
+ * @param {string} cmd - The trimmed, uppercase command from the user.
+ */
 function handleCommand(cmd) {
     const scene = scenes[gameState] || {};
 
+    // Special case: Restarting the game from a 'dead' or final scene
     if (scene.restart) {
-        if (cmd === "") {
-            terminalText = "";
-            gameState = "start";
-            showScene();
+        if (cmd === "" || cmd === "RESTART") {
+            restartGame();
         }
         return;
     }
 
+    // Ignore empty commands
     if (cmd === "") return; 
 
+    // Find valid command keys in the current scene object (excluding meta-properties)
     const commandKeys = Object.keys(scene).filter(k => k !== "text" && k !== "restart");
+    
+    // Help system
+    if (cmd === "HELP" || cmd === "HINT") {
+        printLine("Available commands: " + commandKeys.join(", "));
+        return;
+    }
+
     if (commandKeys.length === 0) return;
+
+    // Execute the function associated with the command, if it exists
     if (scene[cmd]) {
         scene[cmd]();
     } else {
+        // Fallback for unrecognized commands
         printLine("Unknown command here: " + cmd);
     }
 }
