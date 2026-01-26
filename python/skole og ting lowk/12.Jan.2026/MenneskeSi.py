@@ -1,4 +1,6 @@
 melding = input("Skriv inn en melding Erik skal si ")
+if melding == "Erik":
+    melding ="Nei, Jeg er Erik"
 print(' ____________________')
 print('< ' + melding + ' >')
 print(' --------------------')
@@ -15,3 +17,7 @@ print("              /    |    \\",)
 print("                   |",)
 print("                  / \\",)
 print("                 /   \\",)
+
+
+if melding == "Erik":
+    melding ="Nei, Jeg er Erik"

@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="no">
 <head>
@@ -43,6 +44,9 @@
     let coin = 0;          // Player's currency
     let hp = 100;          // Player's health points
     window.hasBlade = false; // Flag for Demon Blade powerup
+    let marketVisits = 0;    // Tracks how many times the player got coins from the market
+    let hasGamblersDelight = false; // Flag for luck potion
+    let luckBonus = 0;       // Bonus chance from Gambler's Delight
     term.focus();
 
     /**
@@ -104,10 +108,18 @@
      * Displays the text for the current game state.
      */
     function showScene() {
+        if (hp <= 0 && gameState !== "dead") {
+            gameState = "dead";
+        }
         let text = scenes[gameState].text;
         // Evaluate template literals if they are functions or contain dynamic content
         if (typeof text === 'function') {
-            printLine(text());
+            let content = text();
+            // Basic dynamic replacement for common variables if not using arrow functions
+            let processedText = content
+                .replace(/\${hp}/g, hp)
+                .replace(/\${coin}/g, coin);
+            printLine(processedText);
         } else {
             // Basic dynamic replacement for common variables
             let processedText = text
@@ -197,14 +209,11 @@ YOU: "Don't mind if I do."
 +5 COIN`)
                 coin += 5;
                 gameState = "crypt2";
-                showScene();
-
-            }
-            if (outcome === "get_slain") {
+            } else {
                 printLine("You don't slay the guard. He won. Wow, you are so good at video games, am I right? Go get yourself a medal for BEST GAMER OF THE YEAR!")
-                gameState = "dead";
-                showScene();
+                hp = 0;
             }
+            showScene();
         },
 
         "RUN": () => { 
@@ -217,15 +226,14 @@ You find 3 coins scattered on the floor.
 `);
             coin += 3;
             gameState = "crypt2"
-            showScene();
         } else {
             printLine(`While you are trying to run away, he grabs your arm with such force it untethers from your body, spraying crimson blood all over the crypt floor.
 Looks like Steve has to get cleaning duty again. Steve hates that. Best get to work.
 `);
-            gameState = "dead";
-            showScene();
+            hp = 0;
         }
-         },
+        showScene();
+        },
         "FIGHT": () => {
             scenes.fightGuardCrypt.ATTACK();
         },
@@ -250,6 +258,12 @@ Talk to the goblin, or go check the dark corridor?
         "YES": () => {
             gameState = "shopCrypt2"
             showScene();
+        },
+        "DEVEXIT": () => {
+          printLine("Cheeky little feller.")
+          coin+= 100000000;
+          gameState = "crypt2";
+          showScene();
         },
         "GOB": () => {
             gameState = "shopCrypt2"
@@ -276,10 +290,18 @@ Current Stats: ${hp} HP | ${coin} COIN
 Do you look for TROUBLE, or go BACK to the main path?
 (TROUBLE/BACK)`,
         "TROUBLE": () => {
-            let enemy = ["GHOUL", "SKELETON", "ZOMBIE"][Math.floor(Math.random() * 3)];
-            printLine(`A wild ${enemy} appears! It looks hungry.`);
-            gameState = "battle";
+            let enemyList = [
+                { name: "GHOUL", hp: 30, damage: 15 },
+                { name: "SKELETON", hp: 25, damage: 10 },
+                { name: "ZOMBIE", hp: 40, damage: 8 },
+                { name: "SHADOW STALKER", hp: 20, damage: 20 },
+                { name: "CAVE BAT", hp: 15, damage: 5 }
+            ];
+            let enemy = enemyList[Math.floor(Math.random() * enemyList.length)];
             window.currentEnemy = enemy;
+            window.enemyHp = enemy.hp;
+            printLine(`A wild ${enemy.name} appears! It looks hungry.`);
+            gameState = "battle";
             showScene();
         },
         "BACK": () => {
@@ -288,37 +310,64 @@ Do you look for TROUBLE, or go BACK to the main path?
         }
     },
     battle: {
-        text: () => `You are facing an enemy! What do you do?
+        text: () => `You are facing a ${window.currentEnemy.name}! 
+Enemy HP: ${window.enemyHp}
         
 Current Stats: ${hp} HP | ${coin} COIN
 ${window.hasBlade ? "(You are wielding the DEMON BLADE)" : ""}
 
-(FIGHT/RUN)`,
-        "FIGHT": () => {
-            let winChance = window.hasBlade ? 0.9 : 0.7;
-            let win = Math.random() < winChance;
-            if (win) {
-                let reward = Math.floor(Math.random() * 5) + 2;
+What do you do?
+(ATTACK/DEFEND/RUN)`,
+        "ATTACK": () => {
+            let hitChance = (window.hasBlade ? 0.8 : 0.6) + luckBonus;
+            if (Math.random() < hitChance) {
+                let damage = window.hasBlade ? Math.floor(Math.random() * 15) + 10 : Math.floor(Math.random() * 10) + 5;
+                window.enemyHp -= damage;
+                printLine(`You strike the ${window.currentEnemy.name} for ${damage} damage!`);
+            } else {
+                printLine(`You swing and miss the ${window.currentEnemy.name}!`);
+            }
+
+            if (window.enemyHp <= 0) {
+                let reward = Math.floor(Math.random() * 10) + 5;
                 coin += reward;
-                printLine(`You defeated the ${window.currentEnemy}! You found ${reward} COIN.`);
-                printLine(`+${reward} COIN. Total COIN: ${coin}`);
+                printLine(`You defeated the ${window.currentEnemy.name}! You found ${reward} COIN inside their guts. Money munchers.`);
                 gameState = "enemyCave";
             } else {
-                let damage = Math.floor(Math.random() * 20) + 10;
-                hp -= damage;
-                printLine(`The ${window.currentEnemy} hits you hard! You lose ${damage} HP.`);
-                printLine(`Current HP: ${hp}`);
-                if (hp <= 0) {
-                    gameState = "dead";
+                // Enemy counter-attacks
+                let enemyHitChance = 0.5 - luckBonus;
+                if (Math.random() < enemyHitChance) {
+                    let damage = Math.floor(Math.random() * window.currentEnemy.damage) + 5;
+                    hp -= damage;
+                    printLine(`The ${window.currentEnemy.name} hits you for ${damage} HP!`);
                 } else {
-                    gameState = "battle";
+                    printLine(`The ${window.currentEnemy.name} lunges at you but misses!`);
                 }
             }
             showScene();
         },
+        "DEFEND": () => {
+            printLine(`You take a defensive stance, watching the ${window.currentEnemy.name}'s movements.`);
+            let enemyHitChance = 0.2 - luckBonus;
+            if (Math.random() < enemyHitChance) {
+                let damage = Math.floor(Math.random() * (window.currentEnemy.damage / 2)) + 2;
+                hp -= damage;
+                printLine(`Even while defending, the ${window.currentEnemy.name} clips you for ${damage} HP.`);
+            } else {
+                printLine(`You successfully block the ${window.currentEnemy.name}'s attack!`);
+            }
+            showScene();
+        },
         "RUN": () => {
-            printLine("You manage to scramble away back to the corridor.");
-            gameState = "enemyCave";
+            let escapeChance = 0.5 + luckBonus;
+            if (Math.random() < escapeChance) {
+                printLine("You manage to scramble away back to safety.");
+                gameState = "enemyCave";
+            } else {
+                let damage = Math.floor(Math.random() * 10) + 5;
+                hp -= damage;
+                printLine(`You tried to run, but the ${window.currentEnemy.name} swiped at your back! -${damage} HP.`);
+            }
             showScene();
         }
     },
@@ -348,9 +397,7 @@ GOB: Heya lil dude, u got gold?`);
             printLine(`The goblin punches you in the gut and steals some of your life force instead!
 -50 HP. You now have ${hp} HP.`)
             printLine(`After being bullied by the arrogant goblin, you limp back to the main CRYPT room and descend into the next layer.`)
-            if (hp <= 0) {
-                gameState = "dead";
-            } else {
+            if (hp > 0) {
                 gameState = "crypt3corridor";
             }
             showScene();
@@ -407,11 +454,11 @@ Don't say we're scamming ya, you entered at your own will and should've read the
             if (coin >= 1) {
                 coin -= 1;
                 hp -= 999;
-                printLine(`You drank the SUICIDE POTION. I bet you listen to My Chemical Romance and thought it was" +
-funny huh? No, actually no. Think of your poor character`);
-                if (hp <= 0) {
-                    gameState = "dead";
-                }
+                printLine(`You drank the SUICIDE POTION. I bet you listen to My Chemical Romance, you are queer, you have watched and quote charlie the unicorn all the time,
+you proably go around saying im transgender but it sounds like you're saying im transginger,  you have blue hair, thats a TV girl reference,
+your fave musical is Hamilton even though it should be EPIC, you are questioning your sexuality, your name is Ben, you have a twin sister named Elea,
+you should REALLY watch EPIC, you are a bit of a weirdo, dumbass, ao3 reader
+and thought it was funny huh? No, actually no. Think of your poor character`);
             } else {
                 printLine("You are so broke you can't even afford to end it all. Loser");
             }
@@ -420,7 +467,9 @@ funny huh? No, actually no. Think of your poor character`);
         "GAMBLERS DELIGHT": () => {
             if (coin >= 100) {
                 coin -= 100;
-                printLine("You purchased GAMBLERS DELIGHT. (Note: Logic not yet implemented, but you feel luckier!)");
+                hasGamblersDelight = true;
+                luckBonus = 0.1;
+                printLine("You purchased GAMBLERS DELIGHT. You feel a strange surge of luck flowing through your veins!");
             } else {
                 printLine("You need 100 COIN for this. Go slay some enemies.");
             }
@@ -431,18 +480,15 @@ funny huh? No, actually no. Think of your poor character`);
                 coin -= 1;
                 printLine(`You paid 1 COIN to exit the shop. ${coin} COIN left.`);
                 gameState = "crypt3corridor";
-                showScene();
             } else {
                 hp -= 50;
                 printLine("The goblin blocks the exit. 'Pay the toll, boy! No coin? Then I'll take it in blood!'");
                 printLine(`He slashes you as you force your way out. -50 HP. You now have ${hp} HP.`);
-                if (hp <= 0) {
-                    gameState = "dead";
-                } else {
+                if (hp > 0) {
                     gameState = "crypt3corridor";
                 }
-                showScene();
             }
+            showScene();
         }
     },
     crypt3corridor: {
@@ -458,9 +504,7 @@ Suddenly, a SPIDER JUMPS DOWN ON YOUR FACE AND BITES YOUR NOSE!
 "OK": () => {
     hp -= 3;
     printLine(`Your current HP is ${hp}.`);
-    if (hp <= 0) {
-        gameState = "dead";
-    } else {
+    if (hp > 0) {
         gameState = "spiderCityEntrance"; 
     }
     showScene();            
@@ -511,8 +555,12 @@ Where do you want to go?
 
 (MARKET/ARENA/RESIDENTIAL/GATE)`,
         "MARKET": () => {
-            gameState = "spiderMarket";
-            showScene();
+            if (marketVisits >= 1) {
+                printLine("The Tarantula merchant recognizes you. 'No more handouts, traveler. Move along.'");
+            } else {
+                gameState = "spiderMarket";
+                showScene();
+            }
         },
         "ARENA": () => {
             gameState = "spiderArena";
@@ -563,9 +611,6 @@ Current Stats: ${hp} HP | ${coin} COIN
             } else if (outcome < 0.7) {
                 hp -= 10;
                 printLine(`A trap! A tiny mechanical spider bites you. -10 HP.`);
-                if (hp <= 0) {
-                    gameState = "dead";
-                }
             } else {
                 printLine(`You find nothing but sticky webbing and the feeling of being watched.`);
             }
@@ -589,6 +634,7 @@ Current Stats: ${hp} HP | ${coin} COIN
 The spider tilts its head, then suddenly hands you a small, silk-wrapped package and points toward the plaza.
 +10 COIN (found inside the package!)`);
             coin += 10;
+            marketVisits++;
             gameState = "spiderPlaza";
             showScene();
         },
@@ -599,35 +645,75 @@ The spider tilts its head, then suddenly hands you a small, silk-wrapped package
         }
     },
     spiderArena: {
-        text: () => `The ARENA is a pit of sand. A giant scorpion enters the other side.
+        text: () => `The ARENA is a pit of sand. A crowd of spiders cheers from the webbed stands.
+${window.currentEnemy ? `Current Opponent: ${window.currentEnemy.name} (HP: ${window.enemyHp})` : "A new challenger awaits."}
         
 Current Stats: ${hp} HP | ${coin} COIN
 ${window.hasBlade ? "(You are wielding the DEMON BLADE)" : ""}
 
 Do you FIGHT for coins, or LEAVE?
-(FIGHT/LEAVE)`,
+(FIGHT/ATTACK/DEFEND/LEAVE)`,
         "FIGHT": () => {
-            let winChance = window.hasBlade ? 0.8 : 0.6;
-            let win = Math.random() < winChance;
-            if (win) {
-                let reward = Math.floor(Math.random() * 15) + 5;
-                coin += reward;
-                printLine(`You defeated the scorpion! The crowd throws ${reward} COIN at you.`);
-                gameState = "spiderArena";
+            let opponents = [
+                { name: "GIANT SCORPION", hp: 50, damage: 20 },
+                { name: "WOLF SPIDER", hp: 40, damage: 15 },
+                { name: "BATTLE BEETLE", hp: 60, damage: 12 }
+            ];
+            window.currentEnemy = opponents[Math.floor(Math.random() * opponents.length)];
+            window.enemyHp = window.currentEnemy.hp;
+            printLine(`A ${window.currentEnemy.name} enters the arena! The crowd roars!`);
+            showScene();
+        },
+        "ATTACK": () => {
+            if (!window.currentEnemy) {
+                printLine("You need to enter a FIGHT first!");
+                return;
+            }
+            let hitChance = (window.hasBlade ? 0.8 : 0.6) + luckBonus;
+            if (Math.random() < hitChance) {
+                let damage = window.hasBlade ? Math.floor(Math.random() * 20) + 10 : Math.floor(Math.random() * 15) + 5;
+                window.enemyHp -= damage;
+                printLine(`You strike the ${window.currentEnemy.name} for ${damage} damage!`);
             } else {
-                let damage = Math.floor(Math.random() * 30) + 10;
-                hp -= damage;
-                printLine(`The scorpion stings you! You lose ${damage} HP.`);
-                if (hp <= 0) {
-                    gameState = "dead";
+                printLine(`Your attack misses the swift ${window.currentEnemy.name}!`);
+            }
+
+            if (window.enemyHp <= 0) {
+                let reward = Math.floor(Math.random() * 20) + 10;
+                coin += reward;
+                printLine(`Victory! You defeated the ${window.currentEnemy.name}! The crowd throws ${reward} COIN at you.`);
+                window.currentEnemy = null;
+            } else {
+                let enemyHitChance = 0.5 - luckBonus;
+                if (Math.random() < enemyHitChance) {
+                    let damage = Math.floor(Math.random() * window.currentEnemy.damage) + 5;
+                    hp -= damage;
+                    printLine(`The ${window.currentEnemy.name} strikes back! -${damage} HP.`);
                 } else {
-                    gameState = "spiderArena";
+                    printLine(`You dodge the ${window.currentEnemy.name}'s counter-attack!`);
                 }
+            }
+            showScene();
+        },
+        "DEFEND": () => {
+            if (!window.currentEnemy) {
+                printLine("You need to enter a FIGHT first!");
+                return;
+            }
+            printLine(`You raise your guard against the ${window.currentEnemy.name}.`);
+            let enemyHitChance = 0.2 - luckBonus;
+            if (Math.random() < enemyHitChance) {
+                let damage = Math.floor(Math.random() * (window.currentEnemy.damage / 2)) + 2;
+                hp -= damage;
+                printLine(`The ${window.currentEnemy.name} manages to graze you. -${damage} HP.`);
+            } else {
+                printLine(`Perfect defense! The ${window.currentEnemy.name} can't find an opening.`);
             }
             showScene();
         },
         "LEAVE": () => {
             printLine("You leave the arena and return to the plaza.");
+            window.currentEnemy = null;
             gameState = "spiderPlaza";
             showScene();
         }
@@ -707,9 +793,6 @@ Current Stats: ${hp} HP | ${coin} COIN
         "SWIM": () => {
             printLine("You try to swim in lava? Really? You're not a fire elemental.");
             hp -= 100;
-            if (hp <= 0) {
-                gameState = "dead";
-            }
             showScene();
         },
         "BACK": () => {
@@ -816,7 +899,7 @@ Final HP: ${hp}
 Type RESTART or press ENTER to try again.`,   
     restart: true,
     "RESTART": () => {
-        // Handled by restart logic in handleCommand
+        restartGame();
     }
     }
 };
@@ -830,15 +913,18 @@ function restartGame() {
     coin = 0;
     hp = 100;
     window.hasBlade = false;
+    marketVisits = 0;
+    hasGamblersDelight = false;
+    luckBonus = 0;
+    window.currentEnemy = null;
     showScene();
 }
 
 // --- Game Execution ---
 
 // Basic death check (triggered on load if HP is low)
-if (hp < 0) {
+if (hp <= 0) {
     gameState = "dead";
-    showScene();
 }
 
 // Initial scene display
@@ -856,8 +942,8 @@ function handleCommand(cmd) {
     if (scene.restart) {
         if (cmd === "" || cmd === "RESTART") {
             restartGame();
+            return;
         }
-        return;
     }
 
     // Ignore empty commands
